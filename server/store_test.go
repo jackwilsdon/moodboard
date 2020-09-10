@@ -43,25 +43,37 @@ func TestStoreInsert(t *testing.T) {
 			inserts: []insertOp{
 				{
 					entry: moodboard.Entry{
-						URL:  "https://example.com/1",
-						Note: "note1",
+						URL:   "https://example.com/1",
+						Note:  "note1",
+						X:     0.1,
+						Y:     0.2,
+						Width: 0.3,
 					},
 				},
 				{
 					entry: moodboard.Entry{
-						URL:  "https://example.com/2",
-						Note: "note2",
+						URL:   "https://example.com/2",
+						Note:  "note2",
+						X:     0.4,
+						Y:     0.5,
+						Width: 0.6,
 					},
 				},
 			},
 			all: []moodboard.Entry{
 				{
-					URL:  "https://example.com/1",
-					Note: "note1",
+					URL:   "https://example.com/1",
+					Note:  "note1",
+					X:     0.1,
+					Y:     0.2,
+					Width: 0.3,
 				},
 				{
-					URL:  "https://example.com/2",
-					Note: "note2",
+					URL:   "https://example.com/2",
+					Note:  "note2",
+					X:     0.4,
+					Y:     0.5,
+					Width: 0.6,
 				},
 			},
 		},
@@ -70,22 +82,31 @@ func TestStoreInsert(t *testing.T) {
 			inserts: []insertOp{
 				{
 					entry: moodboard.Entry{
-						URL:  "https://example.com",
-						Note: "note1",
+						URL:   "https://example.com",
+						Note:  "note1",
+						X:     0.1,
+						Y:     0.2,
+						Width: 0.3,
 					},
 				},
 				{
 					entry: moodboard.Entry{
-						URL:  "https://example.com",
-						Note: "note2",
+						URL:   "https://example.com",
+						Note:  "note2",
+						X:     0.4,
+						Y:     0.5,
+						Width: 0.6,
 					},
 					err: moodboard.ErrDuplicateURL,
 				},
 			},
 			all: []moodboard.Entry{
 				{
-					URL:  "https://example.com",
-					Note: "note1",
+					URL:   "https://example.com",
+					Note:  "note1",
+					X:     0.1,
+					Y:     0.2,
+					Width: 0.3,
 				},
 			},
 		},
@@ -133,6 +154,18 @@ func TestStoreInsert(t *testing.T) {
 				if all[i].Note != c.all[i].Note {
 					t.Errorf("expected all[%d].Note to be %q but got %q", i, c.all[i].Note, all[i].Note)
 				}
+
+				if all[i].X != c.all[i].X {
+					t.Errorf("expected all[%d].X to be %v but got %v", i, c.all[i].X, all[i].X)
+				}
+
+				if all[i].Y != c.all[i].Y {
+					t.Errorf("expected all[%d].Y to be %v but got %v", i, c.all[i].Y, all[i].Y)
+				}
+
+				if all[i].Width != c.all[i].Width {
+					t.Errorf("expected all[%d].Width to be %v but got %v", i, c.all[i].Width, all[i].Width)
+				}
 			}
 		})
 	}
@@ -154,44 +187,68 @@ func TestStoreUpdate(t *testing.T) {
 			name: "update",
 			inserts: []moodboard.Entry{
 				{
-					URL:  "https://example.com/1",
-					Note: "note1",
+					URL:   "https://example.com/1",
+					Note:  "note1",
+					X:     0.1,
+					Y:     0.2,
+					Width: 0.3,
 				},
 				{
-					URL:  "https://example.com/2",
-					Note: "note2",
+					URL:   "https://example.com/2",
+					Note:  "note2",
+					X:     0.4,
+					Y:     0.5,
+					Width: 0.6,
 				},
 				{
-					URL:  "https://example.com/3",
-					Note: "note3",
+					URL:   "https://example.com/3",
+					Note:  "note3",
+					X:     0.7,
+					Y:     0.8,
+					Width: 0.9,
 				},
 			},
 			updates: []updateOp{
 				{
 					entry: moodboard.Entry{
-						URL:  "https://example.com/1",
-						Note: "new note1",
+						URL:   "https://example.com/1",
+						Note:  "new note1",
+						X:     0.7,
+						Y:     0.8,
+						Width: 0.9,
 					},
 				},
 				{
 					entry: moodboard.Entry{
-						URL:  "https://example.com/3",
-						Note: "new note3",
+						URL:   "https://example.com/3",
+						Note:  "new note3",
+						X:     0.1,
+						Y:     0.2,
+						Width: 0.3,
 					},
 				},
 			},
 			all: []moodboard.Entry{
 				{
-					URL:  "https://example.com/1",
-					Note: "new note1",
+					URL:   "https://example.com/1",
+					Note:  "new note1",
+					X:     0.7,
+					Y:     0.8,
+					Width: 0.9,
 				},
 				{
-					URL:  "https://example.com/2",
-					Note: "note2",
+					URL:   "https://example.com/2",
+					Note:  "note2",
+					X:     0.4,
+					Y:     0.5,
+					Width: 0.6,
 				},
 				{
-					URL:  "https://example.com/3",
-					Note: "new note3",
+					URL:   "https://example.com/3",
+					Note:  "new note3",
+					X:     0.1,
+					Y:     0.2,
+					Width: 0.3,
 				},
 			},
 		},
@@ -199,23 +256,32 @@ func TestStoreUpdate(t *testing.T) {
 			name: "update nonexistent",
 			inserts: []moodboard.Entry{
 				{
-					URL:  "https://example.com/1",
-					Note: "note1",
+					URL:   "https://example.com/1",
+					Note:  "note1",
+					X:     0.1,
+					Y:     0.2,
+					Width: 0.3,
 				},
 			},
 			updates: []updateOp{
 				{
 					entry: moodboard.Entry{
-						URL:  "https://example.com/2",
-						Note: "new note2",
+						URL:   "https://example.com/2",
+						Note:  "new note2",
+						X:     0.4,
+						Y:     0.5,
+						Width: 0.6,
 					},
 					err: moodboard.ErrNoSuchEntry,
 				},
 			},
 			all: []moodboard.Entry{
 				{
-					URL:  "https://example.com/1",
-					Note: "note1",
+					URL:   "https://example.com/1",
+					Note:  "note1",
+					X:     0.1,
+					Y:     0.2,
+					Width: 0.3,
 				},
 			},
 		},
@@ -224,8 +290,11 @@ func TestStoreUpdate(t *testing.T) {
 			updates: []updateOp{
 				{
 					entry: moodboard.Entry{
-						URL:  "https://example.com/2",
-						Note: "new note2",
+						URL:   "https://example.com/2",
+						Note:  "new note2",
+						X:     0.1,
+						Y:     0.2,
+						Width: 0.3,
 					},
 					err: moodboard.ErrNoSuchEntry,
 				},
@@ -283,6 +352,18 @@ func TestStoreUpdate(t *testing.T) {
 				if all[i].Note != c.all[i].Note {
 					t.Errorf("expected all[%d].Note to be %q but got %q", i, c.all[i].Note, all[i].Note)
 				}
+
+				if all[i].X != c.all[i].X {
+					t.Errorf("expected all[%d].X to be %v but got %v", i, c.all[i].X, all[i].X)
+				}
+
+				if all[i].Y != c.all[i].Y {
+					t.Errorf("expected all[%d].Y to be %v but got %v", i, c.all[i].Y, all[i].Y)
+				}
+
+				if all[i].Width != c.all[i].Width {
+					t.Errorf("expected all[%d].Width to be %v but got %v", i, c.all[i].Width, all[i].Width)
+				}
 			}
 		})
 	}
@@ -330,16 +411,25 @@ func TestStoreDelete(t *testing.T) {
 			name: "delete",
 			inserts: []moodboard.Entry{
 				{
-					URL:  "https://example.com/1",
-					Note: "note1",
+					URL:   "https://example.com/1",
+					Note:  "note1",
+					X:     0.1,
+					Y:     0.2,
+					Width: 0.3,
 				},
 				{
-					URL:  "https://example.com/2",
-					Note: "note2",
+					URL:   "https://example.com/2",
+					Note:  "note2",
+					X:     0.4,
+					Y:     0.5,
+					Width: 0.6,
 				},
 				{
-					URL:  "https://example.com/3",
-					Note: "note3",
+					URL:   "https://example.com/3",
+					Note:  "note3",
+					X:     0.7,
+					Y:     0.8,
+					Width: 0.9,
 				},
 			},
 			deletes: []deleteOp{
@@ -352,8 +442,11 @@ func TestStoreDelete(t *testing.T) {
 			},
 			all: []moodboard.Entry{
 				{
-					URL:  "https://example.com/2",
-					Note: "note2",
+					URL:   "https://example.com/2",
+					Note:  "note2",
+					X:     0.4,
+					Y:     0.5,
+					Width: 0.6,
 				},
 			},
 		},
@@ -361,8 +454,11 @@ func TestStoreDelete(t *testing.T) {
 			name: "delete nonexistent",
 			inserts: []moodboard.Entry{
 				{
-					URL:  "https://example.com/1",
-					Note: "note1",
+					URL:   "https://example.com/1",
+					Note:  "note1",
+					X:     0.1,
+					Y:     0.2,
+					Width: 0.3,
 				},
 			},
 			deletes: []deleteOp{
@@ -373,8 +469,11 @@ func TestStoreDelete(t *testing.T) {
 			},
 			all: []moodboard.Entry{
 				{
-					URL:  "https://example.com/1",
-					Note: "note1",
+					URL:   "https://example.com/1",
+					Note:  "note1",
+					X:     0.1,
+					Y:     0.2,
+					Width: 0.3,
 				},
 			},
 		}, {
@@ -437,6 +536,18 @@ func TestStoreDelete(t *testing.T) {
 
 				if all[i].Note != c.all[i].Note {
 					t.Errorf("expected all[%d].Note to be %q but got %q", i, c.all[i].Note, all[i].Note)
+				}
+
+				if all[i].X != c.all[i].X {
+					t.Errorf("expected all[%d].X to be %v but got %v", i, c.all[i].X, all[i].X)
+				}
+
+				if all[i].Y != c.all[i].Y {
+					t.Errorf("expected all[%d].Y to be %v but got %v", i, c.all[i].Y, all[i].Y)
+				}
+
+				if all[i].Width != c.all[i].Width {
+					t.Errorf("expected all[%d].Width to be %v but got %v", i, c.all[i].Width, all[i].Width)
 				}
 			}
 		})

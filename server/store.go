@@ -19,6 +19,15 @@ var ErrNoSuchEntry = errors.New("no such entry")
 type Entry struct {
 	URL  string `json:"url"`
 	Note string `json:"note,omitempty"`
+
+	// A number in the range [0, 1].
+	X float32 `json:"x"`
+
+	// A number in the range [0, 1].
+	Y float32 `json:"y"`
+
+	// A number in the range [0, 1].
+	Width float32 `json:"width"`
 }
 
 // Store represents a collection of moodboard items.

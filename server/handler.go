@@ -38,8 +38,8 @@ func (h *handler) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Make sure we have a URL in the request.
-	if len(entry.URL) == 0 {
+	// Make sure the request is valid.
+	if len(entry.URL) == 0 || entry.X < 0 || entry.X > 1 || entry.Y < 0 || entry.Y > 1 || entry.Width < 0 || entry.Width > 1 {
 		w.WriteHeader(http.StatusBadRequest)
 
 		return
@@ -94,6 +94,13 @@ func (h *handler) update(w http.ResponseWriter, r *http.Request) {
 
 	// Try reading in the request.
 	if err := json.NewDecoder(r.Body).Decode(&entry); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+
+		return
+	}
+
+	// Make sure the request is valid.
+	if entry.X < 0 || entry.X > 1 || entry.Y < 0 || entry.Y > 1 || entry.Width < 0 || entry.Width > 1 {
 		w.WriteHeader(http.StatusBadRequest)
 
 		return
