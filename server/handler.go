@@ -12,14 +12,14 @@ type logger interface {
 	Error(string)
 }
 
-// handler is a HTTP handler for moodboard requests.
-type handler struct {
+// Handler is a HTTP handler for moodboard requests.
+type Handler struct {
 	logger logger
 	store  Store
 }
 
 // create handles inserting new moodboard entries.
-func (h *handler) create(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Accept", "application/json")
 
 	// Make sure we have the right content type.
@@ -57,7 +57,7 @@ func (h *handler) create(w http.ResponseWriter, r *http.Request) {
 }
 
 // list handles listing moodboard entries.
-func (h *handler) list(w http.ResponseWriter) {
+func (h *Handler) list(w http.ResponseWriter) {
 	es, err := h.store.All()
 
 	// If we can't get a list of entries then log the error and return a generic error to the client.
@@ -80,7 +80,7 @@ func (h *handler) list(w http.ResponseWriter) {
 }
 
 // update handles updating existing moodboard entries.
-func (h *handler) update(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Accept", "application/json")
 
 	// Make sure we have the right content type.
@@ -117,7 +117,7 @@ func (h *handler) update(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *handler) delete(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Accept", "application/json")
 
 	// Make sure we have the right content type.
@@ -156,7 +156,7 @@ func (h *handler) delete(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
 		h.create(w, r)
@@ -173,6 +173,6 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // NewHandler creates a new moodboard HTTP handler.
-func NewHandler(l logger, s Store) *handler {
-	return &handler{logger: l, store: s}
+func NewHandler(l logger, s Store) *Handler {
+	return &Handler{logger: l, store: s}
 }
