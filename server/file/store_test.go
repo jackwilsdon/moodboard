@@ -2,6 +2,7 @@ package file_test
 
 import (
 	"fmt"
+	"github.com/jackwilsdon/moodboard"
 	"github.com/jackwilsdon/moodboard/file"
 	"io/ioutil"
 	"os"
@@ -29,20 +30,20 @@ func newStore(t *testing.T) *file.Store {
 
 func TestStoreInsert(t *testing.T) {
 	type insertOp struct {
-		entry file.Entry
+		entry moodboard.Entry
 		err   error
 	}
 
 	cs := []struct {
 		name    string
 		inserts []insertOp
-		all     []file.Entry
+		all     []moodboard.Entry
 	}{
 		{
 			name: "insert",
 			inserts: []insertOp{
 				{
-					entry: file.Entry{
+					entry: moodboard.Entry{
 						URL:   "https://example.com/1",
 						Note:  "note1",
 						X:     0.1,
@@ -51,7 +52,7 @@ func TestStoreInsert(t *testing.T) {
 					},
 				},
 				{
-					entry: file.Entry{
+					entry: moodboard.Entry{
 						URL:   "https://example.com/2",
 						Note:  "note2",
 						X:     0.4,
@@ -60,7 +61,7 @@ func TestStoreInsert(t *testing.T) {
 					},
 				},
 			},
-			all: []file.Entry{
+			all: []moodboard.Entry{
 				{
 					URL:   "https://example.com/1",
 					Note:  "note1",
@@ -81,7 +82,7 @@ func TestStoreInsert(t *testing.T) {
 			name: "insert duplicate",
 			inserts: []insertOp{
 				{
-					entry: file.Entry{
+					entry: moodboard.Entry{
 						URL:   "https://example.com",
 						Note:  "note1",
 						X:     0.1,
@@ -90,17 +91,17 @@ func TestStoreInsert(t *testing.T) {
 					},
 				},
 				{
-					entry: file.Entry{
+					entry: moodboard.Entry{
 						URL:   "https://example.com",
 						Note:  "note2",
 						X:     0.4,
 						Y:     0.5,
 						Width: 0.6,
 					},
-					err: file.ErrDuplicateURL,
+					err: moodboard.ErrDuplicateURL,
 				},
 			},
-			all: []file.Entry{
+			all: []moodboard.Entry{
 				{
 					URL:   "https://example.com",
 					Note:  "note1",
@@ -173,19 +174,19 @@ func TestStoreInsert(t *testing.T) {
 
 func TestStoreUpdate(t *testing.T) {
 	type updateOp struct {
-		entry file.Entry
+		entry moodboard.Entry
 		err   error
 	}
 
 	cs := []struct {
 		name    string
-		inserts []file.Entry
+		inserts []moodboard.Entry
 		updates []updateOp
-		all     []file.Entry
+		all     []moodboard.Entry
 	}{
 		{
 			name: "update",
-			inserts: []file.Entry{
+			inserts: []moodboard.Entry{
 				{
 					URL:   "https://example.com/1",
 					Note:  "note1",
@@ -210,7 +211,7 @@ func TestStoreUpdate(t *testing.T) {
 			},
 			updates: []updateOp{
 				{
-					entry: file.Entry{
+					entry: moodboard.Entry{
 						URL:   "https://example.com/1",
 						Note:  "new note1",
 						X:     0.7,
@@ -219,7 +220,7 @@ func TestStoreUpdate(t *testing.T) {
 					},
 				},
 				{
-					entry: file.Entry{
+					entry: moodboard.Entry{
 						URL:   "https://example.com/3",
 						Note:  "new note3",
 						X:     0.1,
@@ -228,7 +229,7 @@ func TestStoreUpdate(t *testing.T) {
 					},
 				},
 			},
-			all: []file.Entry{
+			all: []moodboard.Entry{
 				{
 					URL:   "https://example.com/1",
 					Note:  "new note1",
@@ -254,7 +255,7 @@ func TestStoreUpdate(t *testing.T) {
 		},
 		{
 			name: "update nonexistent",
-			inserts: []file.Entry{
+			inserts: []moodboard.Entry{
 				{
 					URL:   "https://example.com/1",
 					Note:  "note1",
@@ -265,17 +266,17 @@ func TestStoreUpdate(t *testing.T) {
 			},
 			updates: []updateOp{
 				{
-					entry: file.Entry{
+					entry: moodboard.Entry{
 						URL:   "https://example.com/2",
 						Note:  "new note2",
 						X:     0.4,
 						Y:     0.5,
 						Width: 0.6,
 					},
-					err: file.ErrNoSuchEntry,
+					err: moodboard.ErrNoSuchEntry,
 				},
 			},
-			all: []file.Entry{
+			all: []moodboard.Entry{
 				{
 					URL:   "https://example.com/1",
 					Note:  "note1",
@@ -289,14 +290,14 @@ func TestStoreUpdate(t *testing.T) {
 			name: "update empty",
 			updates: []updateOp{
 				{
-					entry: file.Entry{
+					entry: moodboard.Entry{
 						URL:   "https://example.com/2",
 						Note:  "new note2",
 						X:     0.1,
 						Y:     0.2,
 						Width: 0.3,
 					},
-					err: file.ErrNoSuchEntry,
+					err: moodboard.ErrNoSuchEntry,
 				},
 			},
 		},
@@ -386,11 +387,11 @@ func TestStoreUpdateEmptyFile(t *testing.T) {
 
 	s := file.NewStore(f.Name())
 
-	if err := s.Update(file.Entry{}); err != file.ErrNoSuchEntry {
+	if err := s.Update(moodboard.Entry{}); err != moodboard.ErrNoSuchEntry {
 		if err == nil {
-			t.Fatalf("expected error to be %q but got nil", file.ErrNoSuchEntry)
+			t.Fatalf("expected error to be %q but got nil", moodboard.ErrNoSuchEntry)
 		} else {
-			t.Fatalf("expected error to be %q but got %q", file.ErrNoSuchEntry, err)
+			t.Fatalf("expected error to be %q but got %q", moodboard.ErrNoSuchEntry, err)
 		}
 	}
 }
@@ -403,13 +404,13 @@ func TestStoreDelete(t *testing.T) {
 
 	cs := []struct {
 		name    string
-		inserts []file.Entry
+		inserts []moodboard.Entry
 		deletes []deleteOp
-		all     []file.Entry
+		all     []moodboard.Entry
 	}{
 		{
 			name: "delete",
-			inserts: []file.Entry{
+			inserts: []moodboard.Entry{
 				{
 					URL:   "https://example.com/1",
 					Note:  "note1",
@@ -440,7 +441,7 @@ func TestStoreDelete(t *testing.T) {
 					url: "https://example.com/3",
 				},
 			},
-			all: []file.Entry{
+			all: []moodboard.Entry{
 				{
 					URL:   "https://example.com/2",
 					Note:  "note2",
@@ -452,7 +453,7 @@ func TestStoreDelete(t *testing.T) {
 		},
 		{
 			name: "delete nonexistent",
-			inserts: []file.Entry{
+			inserts: []moodboard.Entry{
 				{
 					URL:   "https://example.com/1",
 					Note:  "note1",
@@ -464,10 +465,10 @@ func TestStoreDelete(t *testing.T) {
 			deletes: []deleteOp{
 				{
 					url: "https://example.com/2",
-					err: file.ErrNoSuchEntry,
+					err: moodboard.ErrNoSuchEntry,
 				},
 			},
-			all: []file.Entry{
+			all: []moodboard.Entry{
 				{
 					URL:   "https://example.com/1",
 					Note:  "note1",
@@ -481,7 +482,7 @@ func TestStoreDelete(t *testing.T) {
 			deletes: []deleteOp{
 				{
 					url: "https://example.com/2",
-					err: file.ErrNoSuchEntry,
+					err: moodboard.ErrNoSuchEntry,
 				},
 			},
 		},
@@ -571,11 +572,11 @@ func TestStoreDeleteEmptyFile(t *testing.T) {
 
 	s := file.NewStore(f.Name())
 
-	if err := s.Delete("https://example.com"); err != file.ErrNoSuchEntry {
+	if err := s.Delete("https://example.com"); err != moodboard.ErrNoSuchEntry {
 		if err == nil {
-			t.Fatalf("expected error to be %q but got nil", file.ErrNoSuchEntry)
+			t.Fatalf("expected error to be %q but got nil", moodboard.ErrNoSuchEntry)
 		} else {
-			t.Fatalf("expected error to be %q but got %q", file.ErrNoSuchEntry, err)
+			t.Fatalf("expected error to be %q but got %q", moodboard.ErrNoSuchEntry, err)
 		}
 	}
 }

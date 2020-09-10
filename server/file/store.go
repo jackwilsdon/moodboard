@@ -2,33 +2,12 @@ package file
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
+	"github.com/jackwilsdon/moodboard"
 	"io"
 	"os"
 	"sync"
 )
-
-// ErrDuplicateURL indicates that an entry has a duplicate URL.
-var ErrDuplicateURL = errors.New("duplicate URL")
-
-// ErrNoSuchEntry indicates that an entry does not exist.
-var ErrNoSuchEntry = errors.New("no such entry")
-
-// Entry represents a single moodboard item.
-type Entry struct {
-	URL  string `json:"url"`
-	Note string `json:"note,omitempty"`
-
-	// A number in the range [0, 1].
-	X float32 `json:"x"`
-
-	// A number in the range [0, 1].
-	Y float32 `json:"y"`
-
-	// A number in the range [0, 1].
-	Width float32 `json:"width"`
-}
 
 // Store represents a collection of moodboard items.
 type Store struct {
@@ -39,7 +18,7 @@ type Store struct {
 // Insert adds a new moodboard item to the collection.
 //
 // This method will return an error if an item with the specified URL already exists.
-func (s *Store) Insert(entry Entry) error {
+func (s *Store) Insert(entry moodboard.Entry) error {
 	// We're going to be writing to disk - lock for writing.
 	s.mutex.Lock()
 
@@ -53,7 +32,7 @@ func (s *Store) Insert(entry Entry) error {
 		return fmt.Errorf("failed to open store: %w", err)
 	}
 
-	var entries []Entry
+	var entries []moodboard.Entry
 
 	// Read the current entry list.
 	if err = json.NewDecoder(f).Decode(&entries); err != nil && err != io.EOF {
@@ -67,7 +46,7 @@ func (s *Store) Insert(entry Entry) error {
 		if existing.URL == entry.URL {
 			_ = f.Close()
 
-			return ErrDuplicateURL
+			return moodboard.ErrDuplicateURL
 		}
 	}
 
@@ -96,7 +75,7 @@ func (s *Store) Insert(entry Entry) error {
 }
 
 // All returns all moodboard items in the collection.
-func (s *Store) All() ([]Entry, error) {
+func (s *Store) All() ([]moodboard.Entry, error) {
 	// We're only going to be reading from the disk - lock for reading.
 	s.mutex.RLock()
 
@@ -113,7 +92,7 @@ func (s *Store) All() ([]Entry, error) {
 		return nil, fmt.Errorf("failed to open store: %w", err)
 	}
 
-	var entries []Entry
+	var entries []moodboard.Entry
 
 	// Read the current entry list.
 	if err = json.NewDecoder(f).Decode(&entries); err != nil && err != io.EOF {
@@ -131,7 +110,7 @@ func (s *Store) All() ([]Entry, error) {
 // Update updates a moodboard item in the collection.
 //
 // This method will return an error if an item with the specified URL does not exist.
-func (s *Store) Update(entry Entry) error {
+func (s *Store) Update(entry moodboard.Entry) error {
 	// We're going to be writing to disk - lock for writing.
 	s.mutex.Lock()
 
@@ -143,12 +122,12 @@ func (s *Store) Update(entry Entry) error {
 
 	// If the file doesn't exist then we can exit early (as there's nothing to update).
 	if os.IsNotExist(err) {
-		return ErrNoSuchEntry
+		return moodboard.ErrNoSuchEntry
 	} else if err != nil {
 		return fmt.Errorf("failed to open store: %w", err)
 	}
 
-	var entries []Entry
+	var entries []moodboard.Entry
 
 	// Read the current entry list.
 	if err = json.NewDecoder(f).Decode(&entries); err != nil {
@@ -156,7 +135,7 @@ func (s *Store) Update(entry Entry) error {
 
 		// If it's an EOF error then we can ignore the error and exit early (as the file is empty).
 		if err == io.EOF {
-			return ErrNoSuchEntry
+			return moodboard.ErrNoSuchEntry
 		}
 
 		return fmt.Errorf("failed to read store: %w", err)
@@ -178,7 +157,7 @@ func (s *Store) Update(entry Entry) error {
 	if !exists {
 		_ = f.Close()
 
-		return ErrNoSuchEntry
+		return moodboard.ErrNoSuchEntry
 	}
 
 	// Jump back to the start of the file so that we can overwrite the existing entry list.
@@ -218,12 +197,12 @@ func (s *Store) Delete(url string) error {
 
 	// If the file doesn't exist then we can exit early (as there's nothing to delete).
 	if os.IsNotExist(err) {
-		return ErrNoSuchEntry
+		return moodboard.ErrNoSuchEntry
 	} else if err != nil {
 		return fmt.Errorf("failed to open store: %w", err)
 	}
 
-	var entries []Entry
+	var entries []moodboard.Entry
 
 	// Read the current entry list.
 	if err = json.NewDecoder(f).Decode(&entries); err != nil {
@@ -231,13 +210,13 @@ func (s *Store) Delete(url string) error {
 
 		// If it's an EOF error then we can ignore the error and exit early (as the file is empty).
 		if err == io.EOF {
-			return ErrNoSuchEntry
+			return moodboard.ErrNoSuchEntry
 		}
 
 		return fmt.Errorf("failed to read store: %w", err)
 	}
 
-	remainingEntries := make([]Entry, 0, len(entries))
+	remainingEntries := make([]moodboard.Entry, 0, len(entries))
 
 	// Only keep entries which do not match the URL provided.
 	for _, entry := range entries {
@@ -250,7 +229,7 @@ func (s *Store) Delete(url string) error {
 	if len(entries) == len(remainingEntries) {
 		_ = f.Close()
 
-		return ErrNoSuchEntry
+		return moodboard.ErrNoSuchEntry
 	}
 
 	// Jump back to the start of the file so that we can overwrite the existing entry list.
