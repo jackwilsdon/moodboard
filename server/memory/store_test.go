@@ -98,13 +98,12 @@ func TestStoreInsert(t *testing.T) {
 
 			for i, op := range c.inserts {
 				t.Run(fmt.Sprintf("insert %d", i), func(t *testing.T) {
-					err := s.Insert(op.entry)
-
-					if err != nil && op.err == nil {
+					switch err := s.Insert(op.entry); {
+					case err != nil && op.err == nil:
 						t.Fatalf("expected error to be nil but got %q", err)
-					} else if err == nil && op.err != nil {
+					case err == nil && op.err != nil:
 						t.Fatalf("expected error to be %q but got nil", op.err)
-					} else if err != op.err {
+					case err != op.err:
 						t.Fatalf("expected error to be %q but got %q", op.err, err)
 					}
 				})
@@ -296,13 +295,12 @@ func TestStoreUpdate(t *testing.T) {
 
 			for i, op := range c.updates {
 				t.Run(fmt.Sprintf("update %d", i), func(t *testing.T) {
-					err := s.Update(op.entry)
-
-					if err != nil && op.err == nil {
+					switch err := s.Update(op.entry); {
+					case err != nil && op.err == nil:
 						t.Fatalf("expected error to be nil but got %q", err)
-					} else if err == nil && op.err != nil {
+					case err == nil && op.err != nil:
 						t.Fatalf("expected error to be %q but got nil", op.err)
-					} else if err != op.err {
+					case err != op.err:
 						t.Fatalf("expected error to be %q but got %q", op.err, err)
 					}
 				})
@@ -455,13 +453,12 @@ func TestStoreDelete(t *testing.T) {
 
 			for i, op := range c.deletes {
 				t.Run(fmt.Sprintf("delete %d", i), func(t *testing.T) {
-					err := s.Delete(op.url)
-
-					if err != nil && op.err == nil {
+					switch err := s.Delete(op.url); {
+					case err != nil && op.err == nil:
 						t.Fatalf("expected error to be nil but got %q", err)
-					} else if err == nil && op.err != nil {
+					case err == nil && op.err != nil:
 						t.Fatalf("expected error to be %q but got nil", op.err)
-					} else if err != op.err {
+					case err != op.err:
 						t.Fatalf("expected error to be %q but got %q", op.err, err)
 					}
 				})
