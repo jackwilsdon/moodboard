@@ -112,6 +112,14 @@ func (s *Store) Delete(url string) error {
 }
 
 // NewStore creates a new in-memory moodboard collection.
-func NewStore() *Store {
-	return &Store{}
+func NewStore(entries []moodboard.Entry) *Store {
+	s := &Store{}
+
+	// If we were given some entries then copy them into the store.
+	if entries != nil {
+		s.entries = make([]moodboard.Entry, len(entries))
+		copy(s.entries, entries)
+	}
+
+	return s
 }

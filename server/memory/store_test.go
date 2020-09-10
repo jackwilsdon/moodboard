@@ -94,7 +94,7 @@ func TestStoreInsert(t *testing.T) {
 
 	for _, c := range cs {
 		t.Run(c.name, func(t *testing.T) {
-			s := memory.NewStore()
+			s := memory.NewStore(nil)
 
 			for i, op := range c.inserts {
 				t.Run(fmt.Sprintf("insert %d", i), func(t *testing.T) {
@@ -284,7 +284,7 @@ func TestStoreUpdate(t *testing.T) {
 
 	for _, c := range cs {
 		t.Run(c.name, func(t *testing.T) {
-			s := memory.NewStore()
+			s := memory.NewStore(nil)
 
 			for i, e := range c.inserts {
 				err := s.Insert(e)
@@ -443,7 +443,7 @@ func TestStoreDelete(t *testing.T) {
 
 	for _, c := range cs {
 		t.Run(c.name, func(t *testing.T) {
-			s := memory.NewStore()
+			s := memory.NewStore(nil)
 
 			for i, e := range c.inserts {
 				err := s.Insert(e)

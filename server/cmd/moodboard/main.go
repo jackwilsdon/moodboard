@@ -22,7 +22,7 @@ func main() {
 
 	// Create the right type of store based on the number of arguments we were given.
 	if len(os.Args) == 1 {
-		s = memory.NewStore()
+		s = memory.NewStore(nil)
 
 		log.Print("using in-memory store")
 	} else if len(os.Args) == 2 {
