@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/jackwilsdon/moodboard/file"
 	"log"
 	"net/http"
 	"os"
@@ -23,7 +24,7 @@ func main() {
 	}
 
 	// Create a new store with the provided path.
-	s := moodboard.NewStore(os.Args[1])
+	s := file.NewStore(os.Args[1])
 
 	// Handle requests to the root with the moodboard handler.
 	http.Handle("/", moodboard.NewHandler(logger{}, s))

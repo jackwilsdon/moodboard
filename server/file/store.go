@@ -1,4 +1,4 @@
-package moodboard
+package file
 
 import (
 	"encoding/json"

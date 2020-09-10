@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/jackwilsdon/moodboard/file"
 	"net/http"
 )
 
@@ -15,7 +16,7 @@ type logger interface {
 // handler is a HTTP handler for moodboard requests.
 type handler struct {
 	logger logger
-	store  *Store
+	store  *file.Store
 }
 
 // create handles inserting new moodboard entries.
@@ -29,7 +30,7 @@ func (h *handler) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var entry Entry
+	var entry file.Entry
 
 	// Try reading in the request.
 	if err := json.NewDecoder(r.Body).Decode(&entry); err != nil {
@@ -47,7 +48,7 @@ func (h *handler) create(w http.ResponseWriter, r *http.Request) {
 
 	err := h.store.Insert(entry)
 
-	if errors.Is(err, ErrDuplicateURL) {
+	if errors.Is(err, file.ErrDuplicateURL) {
 		w.WriteHeader(http.StatusConflict)
 	} else if err != nil {
 		// If we don't know how to handle this error then log it and return a generic error to the user.
@@ -72,7 +73,7 @@ func (h *handler) list(w http.ResponseWriter) {
 	//
 	// This is needed to ensure that the JSON encoder does not return null instead of an empty array.
 	if es == nil {
-		es = make([]Entry, 0)
+		es = make([]file.Entry, 0)
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -90,7 +91,7 @@ func (h *handler) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var entry Entry
+	var entry file.Entry
 
 	// Try reading in the request.
 	if err := json.NewDecoder(r.Body).Decode(&entry); err != nil {
@@ -108,7 +109,7 @@ func (h *handler) update(w http.ResponseWriter, r *http.Request) {
 
 	err := h.store.Update(entry)
 
-	if errors.Is(err, ErrNoSuchEntry) {
+	if errors.Is(err, file.ErrNoSuchEntry) {
 		w.WriteHeader(http.StatusNotFound)
 	} else if err != nil {
 		// If we don't know how to handle this error then log it and return a generic error to the user.
@@ -147,7 +148,7 @@ func (h *handler) delete(w http.ResponseWriter, r *http.Request) {
 
 	err := h.store.Delete(entry.URL)
 
-	if errors.Is(err, ErrNoSuchEntry) {
+	if errors.Is(err, file.ErrNoSuchEntry) {
 		w.WriteHeader(http.StatusNotFound)
 	} else if err != nil {
 		// If we don't know how to handle this error then log it and return a generic error to the user.
@@ -173,6 +174,6 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // NewHandler creates a new moodboard HTTP handler.
-func NewHandler(l logger, s *Store) http.Handler {
+func NewHandler(l logger, s *file.Store) *handler {
 	return &handler{logger: l, store: s}
 }
