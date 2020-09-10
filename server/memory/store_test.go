@@ -504,3 +504,67 @@ func TestStoreDelete(t *testing.T) {
 		})
 	}
 }
+
+func TestNewStore(t *testing.T) {
+	entries := []moodboard.Entry{
+		{
+			URL:   "https://example.com/1",
+			Note:  "note1",
+			X:     0.1,
+			Y:     0.2,
+			Width: 0.3,
+		},
+		{
+			URL:   "https://example.com/2",
+			Note:  "note2",
+			X:     0.4,
+			Y:     0.5,
+			Width: 0.6,
+		},
+		{
+			URL:   "https://example.com/3",
+			Note:  "note3",
+			X:     0.7,
+			Y:     0.8,
+			Width: 0.9,
+		},
+	}
+
+	all, err := memory.NewStore(entries).All()
+
+	if err != nil {
+		t.Fatalf("failed to get store contents: %v", err)
+	}
+
+	if len(all) != len(entries) {
+		verb := "entries"
+
+		if len(entries) == 1 {
+			verb = "entry"
+		}
+
+		t.Fatalf("expected to get %d %s but got %d", len(entries), verb, len(all))
+	}
+
+	for i := range all {
+		if all[i].URL != entries[i].URL {
+			t.Errorf("expected all[%d].URL to be %q but got %q", i, entries[i].URL, all[i].URL)
+		}
+
+		if all[i].Note != entries[i].Note {
+			t.Errorf("expected all[%d].Note to be %q but got %q", i, entries[i].Note, all[i].Note)
+		}
+
+		if all[i].X != entries[i].X {
+			t.Errorf("expected all[%d].X to be %v but got %v", i, entries[i].X, all[i].X)
+		}
+
+		if all[i].Y != entries[i].Y {
+			t.Errorf("expected all[%d].Y to be %v but got %v", i, entries[i].Y, all[i].Y)
+		}
+
+		if all[i].Width != entries[i].Width {
+			t.Errorf("expected all[%d].Width to be %v but got %v", i, entries[i].Width, all[i].Width)
+		}
+	}
+}
