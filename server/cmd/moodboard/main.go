@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/jackwilsdon/moodboard/file"
+	"github.com/jackwilsdon/moodboard/memory"
 	"log"
 	"net/http"
 	"os"
@@ -17,14 +18,21 @@ func (logger) Error(msg string) {
 }
 
 func main() {
-	// Ensure a store is provided.
-	if len(os.Args) != 2 {
-		_, _ = fmt.Fprintf(os.Stderr, "usage: %s data.json\n", os.Args[0])
+	var s moodboard.Store
+
+	// Create the right type of store based on the number of arguments we were given.
+	if len(os.Args) == 1 {
+		s = memory.NewStore()
+
+		log.Print("using in-memory store")
+	} else if len(os.Args) == 2 {
+		s = file.NewStore(os.Args[1])
+
+		log.Printf("using file-based store %q", os.Args[1])
+	} else {
+		_, _ = fmt.Fprintf(os.Stderr, "usage: %s [data.json]\n", os.Args[0])
 		os.Exit(1)
 	}
-
-	// Create a new store with the provided path.
-	s := file.NewStore(os.Args[1])
 
 	// Handle requests to the root with the moodboard handler.
 	http.Handle("/", moodboard.NewHandler(logger{}, s))

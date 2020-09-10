@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-// Store represents a collection of moodboard items.
+// Store represents an on-disk collection of moodboard items.
 type Store struct {
 	path  string
 	mutex sync.RWMutex

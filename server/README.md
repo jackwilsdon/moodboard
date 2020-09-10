@@ -23,3 +23,21 @@ $ go build -o moodboard cmd/moodboard/main.go
 ```Text
 $ ./moodboard data.json
 ```
+
+## Stores
+
+The moodboard server currently has two store implementations, [`file`](file) and [`memory`](memory).
+
+To use the file-based store, pass a filename on the command line:
+
+```Text
+$ ./moodboard data.json
+```
+
+To use the memory-based store, do not pass any arguments on the command line:
+
+```Text
+$ ./moodboard
+```
+
+**Note**: the memory-based store is not persisted across restarts, and as such should only be used for testing.
