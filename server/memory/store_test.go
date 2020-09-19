@@ -24,7 +24,6 @@ func TestStoreInsert(t *testing.T) {
 				{
 					entry: moodboard.Entry{
 						URL:   "https://example.com/1",
-						Note:  "note1",
 						X:     0.1,
 						Y:     0.2,
 						Width: 0.3,
@@ -33,7 +32,6 @@ func TestStoreInsert(t *testing.T) {
 				{
 					entry: moodboard.Entry{
 						URL:   "https://example.com/2",
-						Note:  "note2",
 						X:     0.4,
 						Y:     0.5,
 						Width: 0.6,
@@ -43,14 +41,12 @@ func TestStoreInsert(t *testing.T) {
 			all: []moodboard.Entry{
 				{
 					URL:   "https://example.com/1",
-					Note:  "note1",
 					X:     0.1,
 					Y:     0.2,
 					Width: 0.3,
 				},
 				{
 					URL:   "https://example.com/2",
-					Note:  "note2",
 					X:     0.4,
 					Y:     0.5,
 					Width: 0.6,
@@ -63,7 +59,6 @@ func TestStoreInsert(t *testing.T) {
 				{
 					entry: moodboard.Entry{
 						URL:   "https://example.com",
-						Note:  "note1",
 						X:     0.1,
 						Y:     0.2,
 						Width: 0.3,
@@ -72,7 +67,6 @@ func TestStoreInsert(t *testing.T) {
 				{
 					entry: moodboard.Entry{
 						URL:   "https://example.com",
-						Note:  "note2",
 						X:     0.4,
 						Y:     0.5,
 						Width: 0.6,
@@ -83,7 +77,6 @@ func TestStoreInsert(t *testing.T) {
 			all: []moodboard.Entry{
 				{
 					URL:   "https://example.com",
-					Note:  "note1",
 					X:     0.1,
 					Y:     0.2,
 					Width: 0.3,
@@ -130,10 +123,6 @@ func TestStoreInsert(t *testing.T) {
 					t.Errorf("expected all[%d].URL to be %q but got %q", i, c.all[i].URL, all[i].URL)
 				}
 
-				if all[i].Note != c.all[i].Note {
-					t.Errorf("expected all[%d].Note to be %q but got %q", i, c.all[i].Note, all[i].Note)
-				}
-
 				if all[i].X != c.all[i].X {
 					t.Errorf("expected all[%d].X to be %v but got %v", i, c.all[i].X, all[i].X)
 				}
@@ -167,21 +156,18 @@ func TestStoreUpdate(t *testing.T) {
 			inserts: []moodboard.Entry{
 				{
 					URL:   "https://example.com/1",
-					Note:  "note1",
 					X:     0.1,
 					Y:     0.2,
 					Width: 0.3,
 				},
 				{
 					URL:   "https://example.com/2",
-					Note:  "note2",
 					X:     0.4,
 					Y:     0.5,
 					Width: 0.6,
 				},
 				{
 					URL:   "https://example.com/3",
-					Note:  "note3",
 					X:     0.7,
 					Y:     0.8,
 					Width: 0.9,
@@ -191,7 +177,6 @@ func TestStoreUpdate(t *testing.T) {
 				{
 					entry: moodboard.Entry{
 						URL:   "https://example.com/1",
-						Note:  "new note1",
 						X:     0.7,
 						Y:     0.8,
 						Width: 0.9,
@@ -200,7 +185,6 @@ func TestStoreUpdate(t *testing.T) {
 				{
 					entry: moodboard.Entry{
 						URL:   "https://example.com/3",
-						Note:  "new note3",
 						X:     0.1,
 						Y:     0.2,
 						Width: 0.3,
@@ -210,21 +194,18 @@ func TestStoreUpdate(t *testing.T) {
 			all: []moodboard.Entry{
 				{
 					URL:   "https://example.com/1",
-					Note:  "new note1",
 					X:     0.7,
 					Y:     0.8,
 					Width: 0.9,
 				},
 				{
 					URL:   "https://example.com/2",
-					Note:  "note2",
 					X:     0.4,
 					Y:     0.5,
 					Width: 0.6,
 				},
 				{
 					URL:   "https://example.com/3",
-					Note:  "new note3",
 					X:     0.1,
 					Y:     0.2,
 					Width: 0.3,
@@ -236,7 +217,6 @@ func TestStoreUpdate(t *testing.T) {
 			inserts: []moodboard.Entry{
 				{
 					URL:   "https://example.com/1",
-					Note:  "note1",
 					X:     0.1,
 					Y:     0.2,
 					Width: 0.3,
@@ -246,7 +226,6 @@ func TestStoreUpdate(t *testing.T) {
 				{
 					entry: moodboard.Entry{
 						URL:   "https://example.com/2",
-						Note:  "new note2",
 						X:     0.4,
 						Y:     0.5,
 						Width: 0.6,
@@ -257,7 +236,6 @@ func TestStoreUpdate(t *testing.T) {
 			all: []moodboard.Entry{
 				{
 					URL:   "https://example.com/1",
-					Note:  "note1",
 					X:     0.1,
 					Y:     0.2,
 					Width: 0.3,
@@ -270,7 +248,6 @@ func TestStoreUpdate(t *testing.T) {
 				{
 					entry: moodboard.Entry{
 						URL:   "https://example.com/2",
-						Note:  "new note2",
 						X:     0.1,
 						Y:     0.2,
 						Width: 0.3,
@@ -327,10 +304,6 @@ func TestStoreUpdate(t *testing.T) {
 					t.Errorf("expected all[%d].URL to be %q but got %q", i, c.all[i].URL, all[i].URL)
 				}
 
-				if all[i].Note != c.all[i].Note {
-					t.Errorf("expected all[%d].Note to be %q but got %q", i, c.all[i].Note, all[i].Note)
-				}
-
 				if all[i].X != c.all[i].X {
 					t.Errorf("expected all[%d].X to be %v but got %v", i, c.all[i].X, all[i].X)
 				}
@@ -364,21 +337,18 @@ func TestStoreDelete(t *testing.T) {
 			inserts: []moodboard.Entry{
 				{
 					URL:   "https://example.com/1",
-					Note:  "note1",
 					X:     0.1,
 					Y:     0.2,
 					Width: 0.3,
 				},
 				{
 					URL:   "https://example.com/2",
-					Note:  "note2",
 					X:     0.4,
 					Y:     0.5,
 					Width: 0.6,
 				},
 				{
 					URL:   "https://example.com/3",
-					Note:  "note3",
 					X:     0.7,
 					Y:     0.8,
 					Width: 0.9,
@@ -395,7 +365,6 @@ func TestStoreDelete(t *testing.T) {
 			all: []moodboard.Entry{
 				{
 					URL:   "https://example.com/2",
-					Note:  "note2",
 					X:     0.4,
 					Y:     0.5,
 					Width: 0.6,
@@ -407,7 +376,6 @@ func TestStoreDelete(t *testing.T) {
 			inserts: []moodboard.Entry{
 				{
 					URL:   "https://example.com/1",
-					Note:  "note1",
 					X:     0.1,
 					Y:     0.2,
 					Width: 0.3,
@@ -422,7 +390,6 @@ func TestStoreDelete(t *testing.T) {
 			all: []moodboard.Entry{
 				{
 					URL:   "https://example.com/1",
-					Note:  "note1",
 					X:     0.1,
 					Y:     0.2,
 					Width: 0.3,
@@ -485,10 +452,6 @@ func TestStoreDelete(t *testing.T) {
 					t.Errorf("expected all[%d].URL to be %q but got %q", i, c.all[i].URL, all[i].URL)
 				}
 
-				if all[i].Note != c.all[i].Note {
-					t.Errorf("expected all[%d].Note to be %q but got %q", i, c.all[i].Note, all[i].Note)
-				}
-
 				if all[i].X != c.all[i].X {
 					t.Errorf("expected all[%d].X to be %v but got %v", i, c.all[i].X, all[i].X)
 				}
@@ -509,21 +472,18 @@ func TestNewStore(t *testing.T) {
 	entries := []moodboard.Entry{
 		{
 			URL:   "https://example.com/1",
-			Note:  "note1",
 			X:     0.1,
 			Y:     0.2,
 			Width: 0.3,
 		},
 		{
 			URL:   "https://example.com/2",
-			Note:  "note2",
 			X:     0.4,
 			Y:     0.5,
 			Width: 0.6,
 		},
 		{
 			URL:   "https://example.com/3",
-			Note:  "note3",
 			X:     0.7,
 			Y:     0.8,
 			Width: 0.9,
@@ -549,10 +509,6 @@ func TestNewStore(t *testing.T) {
 	for i := range all {
 		if all[i].URL != entries[i].URL {
 			t.Errorf("expected all[%d].URL to be %q but got %q", i, entries[i].URL, all[i].URL)
-		}
-
-		if all[i].Note != entries[i].Note {
-			t.Errorf("expected all[%d].Note to be %q but got %q", i, entries[i].Note, all[i].Note)
 		}
 
 		if all[i].X != entries[i].X {
