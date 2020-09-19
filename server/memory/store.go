@@ -62,24 +62,15 @@ func (s *Store) Update(entry moodboard.Entry) error {
 	// Unlock once we're done.
 	defer s.mutex.Unlock()
 
-	var exists bool
-
 	// Replace the first entry we find with a matching URL.
 	for i := range s.entries {
 		if s.entries[i].URL == entry.URL {
 			s.entries[i] = entry
-			exists = true
-
-			break
+			return nil
 		}
 	}
 
-	// Make sure we actually updated an entry.
-	if !exists {
-		return moodboard.ErrNoSuchEntry
-	}
-
-	return nil
+	return moodboard.ErrNoSuchEntry
 }
 
 // Delete removes a moodboard item from the collection.
