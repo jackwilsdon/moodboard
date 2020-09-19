@@ -26,7 +26,7 @@ type Entry struct {
 type Store interface {
 	// Insert adds a new moodboard item to the collection.
 	//
-	// This method will return an error if an item with the specified URL already exists.
+	// This method will return ErrNoSuchEntry if an item with the specified URL already exists.
 	Insert(Entry) error
 
 	// All returns all moodboard items in the collection.
@@ -34,11 +34,11 @@ type Store interface {
 
 	// Update updates a moodboard item in the collection.
 	//
-	// This method will return an error if an item with the specified URL does not exist.
+	// This method will return ErrNoSuchEntry if an item with the specified URL does not exist.
 	Update(entry Entry) error
 
 	// Delete removes a moodboard item from the collection.
 	//
-	// This method will return an error if an item with the specified URL does not exist.
+	// This method will return ErrNoSuchEntry if an item with the specified URL does not exist.
 	Delete(url string) error
 }

@@ -13,7 +13,7 @@ type Store struct {
 
 // Insert adds a new moodboard item to the collection.
 //
-// This method will return an error if an item with the specified URL already exists.
+// This method will return moodboard.ErrNoSuchEntry if an item with the specified URL already exists.
 func (s *Store) Insert(entry moodboard.Entry) error {
 	// We're going to be modifying our entries slice - lock for writing.
 	s.mutex.Lock()
@@ -54,7 +54,7 @@ func (s *Store) All() ([]moodboard.Entry, error) {
 
 // Update updates a moodboard item in the collection.
 //
-// This method will return an error if an item with the specified URL does not exist.
+// This method will return moodboard.ErrNoSuchEntry if an item with the specified URL does not exist.
 func (s *Store) Update(entry moodboard.Entry) error {
 	// We're going to be modifying our entries slice - lock for writing.
 	s.mutex.Lock()
@@ -84,7 +84,7 @@ func (s *Store) Update(entry moodboard.Entry) error {
 
 // Delete removes a moodboard item from the collection.
 //
-// This method will return an error if an item with the specified URL does not exist.
+// This method will return moodboard.ErrNoSuchEntry if an item with the specified URL does not exist.
 func (s *Store) Delete(url string) error {
 	// We're going to be modifying our entries slice - lock for writing.
 	s.mutex.Lock()
