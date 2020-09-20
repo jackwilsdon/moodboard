@@ -19,41 +19,19 @@ type Handler struct {
 }
 
 // create handles inserting new moodboard entries.
-func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Accept", "application/json")
+func (h *Handler) create(w http.ResponseWriter) {
+	entry, err := h.store.Create()
 
-	// Make sure we have the right content type.
-	if r.Header.Get("Content-Type") != "application/json" {
-		w.WriteHeader(http.StatusUnsupportedMediaType)
-
-		return
-	}
-
-	var entry Entry
-
-	// Try reading in the request.
-	if err := json.NewDecoder(r.Body).Decode(&entry); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-
-		return
-	}
-
-	// Make sure the request is valid.
-	if len(entry.URL) == 0 || entry.X < 0 || entry.X > 1 || entry.Y < 0 || entry.Y > 1 || entry.Width < 0 || entry.Width > 1 {
-		w.WriteHeader(http.StatusBadRequest)
-
-		return
-	}
-
-	err := h.store.Insert(entry)
-
-	if errors.Is(err, ErrDuplicateURL) {
-		w.WriteHeader(http.StatusConflict)
-	} else if err != nil {
-		// If we don't know how to handle this error then log it and return a generic error to the user.
+	if err != nil {
+		// This error is unexpected - log it and return a generic error to the user.
 		h.logger.Error(fmt.Sprintf("failed to insert entry: %v", err))
 		w.WriteHeader(http.StatusInternalServerError)
+
+		return
 	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(entry.ID)
 }
 
 // list handles listing moodboard entries.
@@ -128,7 +106,7 @@ func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var entry struct {
-		URL string `json:"url"`
+		ID string `json:"id"`
 	}
 
 	// Try reading in the request.
@@ -138,14 +116,14 @@ func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Make sure we have a URL in the request.
-	if len(entry.URL) == 0 {
+	// Make sure we have an ID in the request.
+	if len(entry.ID) == 0 {
 		w.WriteHeader(http.StatusBadRequest)
 
 		return
 	}
 
-	err := h.store.Delete(entry.URL)
+	err := h.store.Delete(entry.ID)
 
 	if errors.Is(err, ErrNoSuchEntry) {
 		w.WriteHeader(http.StatusNotFound)
@@ -159,7 +137,7 @@ func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
-		h.create(w, r)
+		h.create(w)
 	case http.MethodGet:
 		h.list(w)
 	case http.MethodPut:

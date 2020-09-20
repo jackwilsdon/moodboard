@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"github.com/google/uuid"
 	"github.com/jackwilsdon/moodboard"
 	"sync"
 )
@@ -11,26 +12,21 @@ type Store struct {
 	mutex   sync.RWMutex
 }
 
-// Insert adds a new moodboard item to the collection.
-//
-// This method will return moodboard.ErrNoSuchEntry if an item with the specified URL already exists.
-func (s *Store) Insert(entry moodboard.Entry) error {
+// Create creates a new moodboard item in the collection.
+func (s *Store) Create() (moodboard.Entry, error) {
 	// We're going to be modifying our entries slice - lock for writing.
 	s.mutex.Lock()
 
 	// Unlock once we're done.
 	defer s.mutex.Unlock()
 
-	// Ensure we're not inserting a duplicate.
-	for _, existing := range s.entries {
-		if existing.URL == entry.URL {
-			return moodboard.ErrDuplicateURL
-		}
+	entry := moodboard.Entry{
+		ID: uuid.New().String(),
 	}
 
 	s.entries = append(s.entries, entry)
 
-	return nil
+	return entry, nil
 }
 
 // All returns all moodboard items in the collection.
@@ -54,7 +50,7 @@ func (s *Store) All() ([]moodboard.Entry, error) {
 
 // Update updates a moodboard item in the collection.
 //
-// This method will return moodboard.ErrNoSuchEntry if an item with the specified URL does not exist.
+// This method will return moodboard.ErrNoSuchEntry if an item with the specified ID does not exist.
 func (s *Store) Update(entry moodboard.Entry) error {
 	// We're going to be modifying our entries slice - lock for writing.
 	s.mutex.Lock()
@@ -62,9 +58,9 @@ func (s *Store) Update(entry moodboard.Entry) error {
 	// Unlock once we're done.
 	defer s.mutex.Unlock()
 
-	// Replace the first entry we find with a matching URL.
+	// Replace the first entry we find with a matching ID.
 	for i := range s.entries {
-		if s.entries[i].URL == entry.URL {
+		if s.entries[i].ID == entry.ID {
 			s.entries[i] = entry
 			return nil
 		}
@@ -75,8 +71,8 @@ func (s *Store) Update(entry moodboard.Entry) error {
 
 // Delete removes a moodboard item from the collection.
 //
-// This method will return moodboard.ErrNoSuchEntry if an item with the specified URL does not exist.
-func (s *Store) Delete(url string) error {
+// This method will return moodboard.ErrNoSuchEntry if an item with the specified ID does not exist.
+func (s *Store) Delete(id string) error {
 	// We're going to be modifying our entries slice - lock for writing.
 	s.mutex.Lock()
 
@@ -85,9 +81,9 @@ func (s *Store) Delete(url string) error {
 
 	remainingEntries := make([]moodboard.Entry, 0, len(s.entries))
 
-	// Only keep entries which do not match the URL provided.
+	// Only keep entries which do not match the ID provided.
 	for _, entry := range s.entries {
-		if entry.URL != url {
+		if entry.ID != id {
 			remainingEntries = append(remainingEntries, entry)
 		}
 	}
@@ -103,14 +99,6 @@ func (s *Store) Delete(url string) error {
 }
 
 // NewStore creates a new in-memory moodboard collection.
-func NewStore(entries []moodboard.Entry) *Store {
-	s := &Store{}
-
-	// If we were given some entries then copy them into the store.
-	if entries != nil {
-		s.entries = make([]moodboard.Entry, len(entries))
-		copy(s.entries, entries)
-	}
-
-	return s
+func NewStore() *Store {
+	return &Store{}
 }

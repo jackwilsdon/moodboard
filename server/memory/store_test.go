@@ -1,286 +1,93 @@
 package memory_test
 
 import (
-	"fmt"
 	"github.com/jackwilsdon/moodboard"
 	"github.com/jackwilsdon/moodboard/memory"
 	"testing"
 )
 
-func TestStoreInsert(t *testing.T) {
-	type insertOp struct {
-		entry moodboard.Entry
-		err   error
+func TestStoreCreate(t *testing.T) {
+	s := memory.NewStore()
+
+	entry, err := s.Create()
+
+	if err != nil {
+		t.Fatalf("expected error to be nil but got %q", err)
 	}
 
-	cs := []struct {
-		name    string
-		inserts []insertOp
-		all     []moodboard.Entry
-	}{
-		{
-			name: "insert",
-			inserts: []insertOp{
-				{
-					entry: moodboard.Entry{
-						URL:   "https://example.com/1",
-						X:     0.1,
-						Y:     0.2,
-						Width: 0.3,
-					},
-				},
-				{
-					entry: moodboard.Entry{
-						URL:   "https://example.com/2",
-						X:     0.4,
-						Y:     0.5,
-						Width: 0.6,
-					},
-				},
-			},
-			all: []moodboard.Entry{
-				{
-					URL:   "https://example.com/1",
-					X:     0.1,
-					Y:     0.2,
-					Width: 0.3,
-				},
-				{
-					URL:   "https://example.com/2",
-					X:     0.4,
-					Y:     0.5,
-					Width: 0.6,
-				},
-			},
-		},
-		{
-			name: "insert duplicate",
-			inserts: []insertOp{
-				{
-					entry: moodboard.Entry{
-						URL:   "https://example.com",
-						X:     0.1,
-						Y:     0.2,
-						Width: 0.3,
-					},
-				},
-				{
-					entry: moodboard.Entry{
-						URL:   "https://example.com",
-						X:     0.4,
-						Y:     0.5,
-						Width: 0.6,
-					},
-					err: moodboard.ErrDuplicateURL,
-				},
-			},
-			all: []moodboard.Entry{
-				{
-					URL:   "https://example.com",
-					X:     0.1,
-					Y:     0.2,
-					Width: 0.3,
-				},
-			},
-		},
+	if entry.X != 0 {
+		t.Errorf("expected entry.X to be 0 but got %v", entry.X)
 	}
 
-	for _, c := range cs {
-		t.Run(c.name, func(t *testing.T) {
-			s := memory.NewStore(nil)
+	if entry.Y != 0 {
+		t.Errorf("expected entry.Y to be 0 but got %v", entry.Y)
+	}
 
-			for i, op := range c.inserts {
-				t.Run(fmt.Sprintf("insert %d", i), func(t *testing.T) {
-					switch err := s.Insert(op.entry); {
-					case err != nil && op.err == nil:
-						t.Fatalf("expected error to be nil but got %q", err)
-					case err == nil && op.err != nil:
-						t.Fatalf("expected error to be %q but got nil", op.err)
-					case err != op.err:
-						t.Fatalf("expected error to be %q but got %q", op.err, err)
-					}
-				})
-			}
-
-			all, err := s.All()
-
-			if err != nil {
-				t.Fatalf("failed to get store contents: %v", err)
-			}
-
-			if len(all) != len(c.all) {
-				verb := "entries"
-
-				if len(c.all) == 1 {
-					verb = "entry"
-				}
-
-				t.Fatalf("expected to get %d %s but got %d", len(c.all), verb, len(all))
-			}
-
-			for i := range all {
-				if all[i].URL != c.all[i].URL {
-					t.Errorf("expected all[%d].URL to be %q but got %q", i, c.all[i].URL, all[i].URL)
-				}
-
-				if all[i].X != c.all[i].X {
-					t.Errorf("expected all[%d].X to be %v but got %v", i, c.all[i].X, all[i].X)
-				}
-
-				if all[i].Y != c.all[i].Y {
-					t.Errorf("expected all[%d].Y to be %v but got %v", i, c.all[i].Y, all[i].Y)
-				}
-
-				if all[i].Width != c.all[i].Width {
-					t.Errorf("expected all[%d].Width to be %v but got %v", i, c.all[i].Width, all[i].Width)
-				}
-			}
-		})
+	if entry.Width != 0 {
+		t.Errorf("expected entry.Width to be 0 but got %v", entry.Width)
 	}
 }
 
 func TestStoreUpdate(t *testing.T) {
-	type updateOp struct {
-		entry moodboard.Entry
-		err   error
-	}
-
 	cs := []struct {
-		name    string
-		inserts []moodboard.Entry
-		updates []updateOp
-		all     []moodboard.Entry
+		name   string
+		create int
+		update int
+		entry  moodboard.Entry
+		err    error
 	}{
 		{
-			name: "update",
-			inserts: []moodboard.Entry{
-				{
-					URL:   "https://example.com/1",
-					X:     0.1,
-					Y:     0.2,
-					Width: 0.3,
-				},
-				{
-					URL:   "https://example.com/2",
-					X:     0.4,
-					Y:     0.5,
-					Width: 0.6,
-				},
-				{
-					URL:   "https://example.com/3",
-					X:     0.7,
-					Y:     0.8,
-					Width: 0.9,
-				},
-			},
-			updates: []updateOp{
-				{
-					entry: moodboard.Entry{
-						URL:   "https://example.com/1",
-						X:     0.7,
-						Y:     0.8,
-						Width: 0.9,
-					},
-				},
-				{
-					entry: moodboard.Entry{
-						URL:   "https://example.com/3",
-						X:     0.1,
-						Y:     0.2,
-						Width: 0.3,
-					},
-				},
-			},
-			all: []moodboard.Entry{
-				{
-					URL:   "https://example.com/1",
-					X:     0.7,
-					Y:     0.8,
-					Width: 0.9,
-				},
-				{
-					URL:   "https://example.com/2",
-					X:     0.4,
-					Y:     0.5,
-					Width: 0.6,
-				},
-				{
-					URL:   "https://example.com/3",
-					X:     0.1,
-					Y:     0.2,
-					Width: 0.3,
-				},
+			name:   "update",
+			create: 3,
+			update: 0,
+			entry: moodboard.Entry{
+				X:     0.1,
+				Y:     0.2,
+				Width: 0.3,
 			},
 		},
 		{
-			name: "update nonexistent",
-			inserts: []moodboard.Entry{
-				{
-					URL:   "https://example.com/1",
-					X:     0.1,
-					Y:     0.2,
-					Width: 0.3,
-				},
-			},
-			updates: []updateOp{
-				{
-					entry: moodboard.Entry{
-						URL:   "https://example.com/2",
-						X:     0.4,
-						Y:     0.5,
-						Width: 0.6,
-					},
-					err: moodboard.ErrNoSuchEntry,
-				},
-			},
-			all: []moodboard.Entry{
-				{
-					URL:   "https://example.com/1",
-					X:     0.1,
-					Y:     0.2,
-					Width: 0.3,
-				},
-			},
+			name:   "update nonexistent",
+			create: 1,
+			update: -1,
+			err:    moodboard.ErrNoSuchEntry,
 		},
 		{
-			name: "update empty",
-			updates: []updateOp{
-				{
-					entry: moodboard.Entry{
-						URL:   "https://example.com/2",
-						X:     0.1,
-						Y:     0.2,
-						Width: 0.3,
-					},
-					err: moodboard.ErrNoSuchEntry,
-				},
-			},
+			name:   "update empty",
+			update: -1,
+			err:    moodboard.ErrNoSuchEntry,
 		},
 	}
 
 	for _, c := range cs {
 		t.Run(c.name, func(t *testing.T) {
-			s := memory.NewStore(nil)
+			s := memory.NewStore()
+			entries := make([]moodboard.Entry, c.create)
 
-			for i, e := range c.inserts {
-				err := s.Insert(e)
+			for i := 0; i < c.create; i++ {
+				entry, err := s.Create()
 
 				if err != nil {
-					t.Fatalf("failed to insert entry %d: %v", i, err)
+					t.Fatalf("failed to create entry: %v", err)
 				}
+
+				entries[i] = entry
 			}
 
-			for i, op := range c.updates {
-				t.Run(fmt.Sprintf("update %d", i), func(t *testing.T) {
-					switch err := s.Update(op.entry); {
-					case err != nil && op.err == nil:
-						t.Fatalf("expected error to be nil but got %q", err)
-					case err == nil && op.err != nil:
-						t.Fatalf("expected error to be %q but got nil", op.err)
-					case err != op.err:
-						t.Fatalf("expected error to be %q but got %q", op.err, err)
-					}
-				})
+			entry := c.entry
+
+			if c.update != -1 {
+				entry.ID = entries[c.update].ID
+				entries[c.update] = entry
+			}
+
+			switch err := s.Update(entry); {
+			case err != nil && c.err == nil:
+				t.Fatalf("expected error to be nil but got %q", err)
+			case err == nil && c.err != nil:
+				t.Fatalf("expected error to be %q but got nil", c.err)
+			case err != c.err:
+				t.Fatalf("expected error to be %q but got %q", c.err, err)
 			}
 
 			all, err := s.All()
@@ -289,31 +96,31 @@ func TestStoreUpdate(t *testing.T) {
 				t.Fatalf("failed to get store contents: %v", err)
 			}
 
-			if len(all) != len(c.all) {
+			if len(all) != len(entries) {
 				verb := "entries"
 
-				if len(c.all) == 1 {
+				if len(entries) == 1 {
 					verb = "entry"
 				}
 
-				t.Fatalf("expected to get %d %s but got %d", len(c.all), verb, len(all))
+				t.Fatalf("expected to get %d %s but got %d", len(entries), verb, len(all))
 			}
 
 			for i := range all {
-				if all[i].URL != c.all[i].URL {
-					t.Errorf("expected all[%d].URL to be %q but got %q", i, c.all[i].URL, all[i].URL)
+				if all[i].ID != entries[i].ID {
+					t.Errorf("expected all[%d].ID to be %v but got %v", i, entries[i].ID, all[i].ID)
 				}
 
-				if all[i].X != c.all[i].X {
-					t.Errorf("expected all[%d].X to be %v but got %v", i, c.all[i].X, all[i].X)
+				if all[i].X != entries[i].X {
+					t.Errorf("expected all[%d].X to be %v but got %v", i, entries[i].X, all[i].X)
 				}
 
-				if all[i].Y != c.all[i].Y {
-					t.Errorf("expected all[%d].Y to be %v but got %v", i, c.all[i].Y, all[i].Y)
+				if all[i].Y != entries[i].Y {
+					t.Errorf("expected all[%d].Y to be %v but got %v", i, entries[i].Y, all[i].Y)
 				}
 
-				if all[i].Width != c.all[i].Width {
-					t.Errorf("expected all[%d].Width to be %v but got %v", i, c.all[i].Width, all[i].Width)
+				if all[i].Width != entries[i].Width {
+					t.Errorf("expected all[%d].Width to be %v but got %v", i, entries[i].Width, all[i].Width)
 				}
 			}
 		})
@@ -321,114 +128,63 @@ func TestStoreUpdate(t *testing.T) {
 }
 
 func TestStoreDelete(t *testing.T) {
-	type deleteOp struct {
-		url string
-		err error
-	}
-
 	cs := []struct {
-		name    string
-		inserts []moodboard.Entry
-		deletes []deleteOp
-		all     []moodboard.Entry
+		name   string
+		create int
+		delete int
+		err    error
 	}{
 		{
-			name: "delete",
-			inserts: []moodboard.Entry{
-				{
-					URL:   "https://example.com/1",
-					X:     0.1,
-					Y:     0.2,
-					Width: 0.3,
-				},
-				{
-					URL:   "https://example.com/2",
-					X:     0.4,
-					Y:     0.5,
-					Width: 0.6,
-				},
-				{
-					URL:   "https://example.com/3",
-					X:     0.7,
-					Y:     0.8,
-					Width: 0.9,
-				},
-			},
-			deletes: []deleteOp{
-				{
-					url: "https://example.com/1",
-				},
-				{
-					url: "https://example.com/3",
-				},
-			},
-			all: []moodboard.Entry{
-				{
-					URL:   "https://example.com/2",
-					X:     0.4,
-					Y:     0.5,
-					Width: 0.6,
-				},
-			},
+			name:   "delete",
+			create: 3,
+			delete: 0,
 		},
 		{
-			name: "delete nonexistent",
-			inserts: []moodboard.Entry{
-				{
-					URL:   "https://example.com/1",
-					X:     0.1,
-					Y:     0.2,
-					Width: 0.3,
-				},
-			},
-			deletes: []deleteOp{
-				{
-					url: "https://example.com/2",
-					err: moodboard.ErrNoSuchEntry,
-				},
-			},
-			all: []moodboard.Entry{
-				{
-					URL:   "https://example.com/1",
-					X:     0.1,
-					Y:     0.2,
-					Width: 0.3,
-				},
-			},
+			name:   "delete nonexistent",
+			create: 1,
+			delete: -1,
+			err:    moodboard.ErrNoSuchEntry,
 		}, {
-			name: "delete empty",
-			deletes: []deleteOp{
-				{
-					url: "https://example.com/2",
-					err: moodboard.ErrNoSuchEntry,
-				},
-			},
+			name:   "delete empty",
+			delete: -1,
+			err:    moodboard.ErrNoSuchEntry,
 		},
 	}
 
 	for _, c := range cs {
 		t.Run(c.name, func(t *testing.T) {
-			s := memory.NewStore(nil)
+			s := memory.NewStore()
+			entries := make([]moodboard.Entry, c.create)
 
-			for i, e := range c.inserts {
-				err := s.Insert(e)
+			for i := 0; i < c.create; i++ {
+				entry, err := s.Create()
 
 				if err != nil {
-					t.Fatalf("failed to insert entry %d: %v", i, err)
+					t.Fatalf("failed to create entry: %v", err)
 				}
+
+				entries[i] = entry
 			}
 
-			for i, op := range c.deletes {
-				t.Run(fmt.Sprintf("delete %d", i), func(t *testing.T) {
-					switch err := s.Delete(op.url); {
-					case err != nil && op.err == nil:
-						t.Fatalf("expected error to be nil but got %q", err)
-					case err == nil && op.err != nil:
-						t.Fatalf("expected error to be %q but got nil", op.err)
-					case err != op.err:
-						t.Fatalf("expected error to be %q but got %q", op.err, err)
-					}
-				})
+			var id string
+
+			if c.delete != -1 {
+				id = entries[c.delete].ID
+
+				// Move all entries after the deleted one left.
+				copy(entries[c.delete:], entries[c.delete+1:])
+
+				// Remove the last (now duplicated) element.
+				entries = entries[:len(entries)-1]
+			}
+
+			switch err := s.Delete(id); {
+			case err != nil && c.err == nil:
+				t.Fatalf("expected error to be nil but got %q", err)
+			case err == nil && c.err != nil:
+				t.Fatalf("expected error to be %q but got nil", c.err)
+			case err != c.err:
+				t.Fatalf("expected error to be %q but got %q", c.err, err)
 			}
 
 			all, err := s.All()
@@ -437,90 +193,33 @@ func TestStoreDelete(t *testing.T) {
 				t.Fatalf("failed to get store contents: %v", err)
 			}
 
-			if len(all) != len(c.all) {
+			if len(all) != len(entries) {
 				verb := "entries"
 
-				if len(c.all) == 1 {
+				if len(entries) == 1 {
 					verb = "entry"
 				}
 
-				t.Fatalf("expected to get %d %s but got %d", len(c.all), verb, len(all))
+				t.Fatalf("expected to get %d %s but got %d", len(entries), verb, len(all))
 			}
 
 			for i := range all {
-				if all[i].URL != c.all[i].URL {
-					t.Errorf("expected all[%d].URL to be %q but got %q", i, c.all[i].URL, all[i].URL)
+				if all[i].ID != entries[i].ID {
+					t.Errorf("expected all[%d].ID to be %v but got %v", i, entries[i].ID, all[i].ID)
 				}
 
-				if all[i].X != c.all[i].X {
-					t.Errorf("expected all[%d].X to be %v but got %v", i, c.all[i].X, all[i].X)
+				if all[i].X != entries[i].X {
+					t.Errorf("expected all[%d].X to be %v but got %v", i, entries[i].X, all[i].X)
 				}
 
-				if all[i].Y != c.all[i].Y {
-					t.Errorf("expected all[%d].Y to be %v but got %v", i, c.all[i].Y, all[i].Y)
+				if all[i].Y != entries[i].Y {
+					t.Errorf("expected all[%d].Y to be %v but got %v", i, entries[i].Y, all[i].Y)
 				}
 
-				if all[i].Width != c.all[i].Width {
-					t.Errorf("expected all[%d].Width to be %v but got %v", i, c.all[i].Width, all[i].Width)
+				if all[i].Width != entries[i].Width {
+					t.Errorf("expected all[%d].Width to be %v but got %v", i, entries[i].Width, all[i].Width)
 				}
 			}
 		})
-	}
-}
-
-func TestNewStore(t *testing.T) {
-	entries := []moodboard.Entry{
-		{
-			URL:   "https://example.com/1",
-			X:     0.1,
-			Y:     0.2,
-			Width: 0.3,
-		},
-		{
-			URL:   "https://example.com/2",
-			X:     0.4,
-			Y:     0.5,
-			Width: 0.6,
-		},
-		{
-			URL:   "https://example.com/3",
-			X:     0.7,
-			Y:     0.8,
-			Width: 0.9,
-		},
-	}
-
-	all, err := memory.NewStore(entries).All()
-
-	if err != nil {
-		t.Fatalf("failed to get store contents: %v", err)
-	}
-
-	if len(all) != len(entries) {
-		verb := "entries"
-
-		if len(entries) == 1 {
-			verb = "entry"
-		}
-
-		t.Fatalf("expected to get %d %s but got %d", len(entries), verb, len(all))
-	}
-
-	for i := range all {
-		if all[i].URL != entries[i].URL {
-			t.Errorf("expected all[%d].URL to be %q but got %q", i, entries[i].URL, all[i].URL)
-		}
-
-		if all[i].X != entries[i].X {
-			t.Errorf("expected all[%d].X to be %v but got %v", i, entries[i].X, all[i].X)
-		}
-
-		if all[i].Y != entries[i].Y {
-			t.Errorf("expected all[%d].Y to be %v but got %v", i, entries[i].Y, all[i].Y)
-		}
-
-		if all[i].Width != entries[i].Width {
-			t.Errorf("expected all[%d].Width to be %v but got %v", i, entries[i].Width, all[i].Width)
-		}
 	}
 }

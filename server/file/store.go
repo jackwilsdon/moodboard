@@ -3,6 +3,7 @@ package file
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/jackwilsdon/moodboard"
 	"io"
 	"os"
@@ -15,10 +16,8 @@ type Store struct {
 	mutex sync.RWMutex
 }
 
-// Insert adds a new moodboard item to the collection.
-//
-// This method will return moodboard.ErrNoSuchEntry if an item with the specified URL already exists.
-func (s *Store) Insert(entry moodboard.Entry) error {
+// Create creates a new moodboard item in the collection.
+func (s *Store) Create() (moodboard.Entry, error) {
 	// We're going to be writing to disk - lock for writing.
 	s.mutex.Lock()
 
@@ -29,7 +28,7 @@ func (s *Store) Insert(entry moodboard.Entry) error {
 	f, err := os.OpenFile(s.path, os.O_RDWR|os.O_CREATE, 0o666)
 
 	if err != nil {
-		return fmt.Errorf("failed to open store: %w", err)
+		return moodboard.Entry{}, fmt.Errorf("failed to open store: %w", err)
 	}
 
 	var entries []moodboard.Entry
@@ -38,23 +37,18 @@ func (s *Store) Insert(entry moodboard.Entry) error {
 	if err = json.NewDecoder(f).Decode(&entries); err != nil && err != io.EOF {
 		_ = f.Close()
 
-		return fmt.Errorf("failed to read store: %w", err)
-	}
-
-	// Ensure we're not inserting a duplicate.
-	for _, existing := range entries {
-		if existing.URL == entry.URL {
-			_ = f.Close()
-
-			return moodboard.ErrDuplicateURL
-		}
+		return moodboard.Entry{}, fmt.Errorf("failed to read store: %w", err)
 	}
 
 	// Jump back to the start of the file so that we can overwrite the existing entry list.
 	if _, err = f.Seek(0, io.SeekStart); err != nil {
 		_ = f.Close()
 
-		return fmt.Errorf("failed to seek to start of file: %w", err)
+		return moodboard.Entry{}, fmt.Errorf("failed to seek to start of file: %w", err)
+	}
+
+	entry := moodboard.Entry{
+		ID: uuid.New().String(),
 	}
 
 	entries = append(entries, entry)
@@ -63,15 +57,15 @@ func (s *Store) Insert(entry moodboard.Entry) error {
 	if err = json.NewEncoder(f).Encode(entries); err != nil {
 		_ = f.Close()
 
-		return fmt.Errorf("failed to write store: %w", err)
+		return moodboard.Entry{}, fmt.Errorf("failed to write store: %w", err)
 	}
 
 	// Close the file.
 	if err = f.Close(); err != nil {
-		return fmt.Errorf("failed to close file: %w", err)
+		return moodboard.Entry{}, fmt.Errorf("failed to close file: %w", err)
 	}
 
-	return nil
+	return entry, nil
 }
 
 // All returns all moodboard items in the collection.
@@ -109,7 +103,7 @@ func (s *Store) All() ([]moodboard.Entry, error) {
 
 // Update updates a moodboard item in the collection.
 //
-// This method will return moodboard.ErrNoSuchEntry if an item with the specified URL does not exist.
+// This method will return moodboard.ErrNoSuchEntry if an item with the specified ID does not exist.
 func (s *Store) Update(entry moodboard.Entry) error {
 	// We're going to be writing to disk - lock for writing.
 	s.mutex.Lock()
@@ -143,9 +137,9 @@ func (s *Store) Update(entry moodboard.Entry) error {
 
 	var exists bool
 
-	// Replace the first entry we find with a matching URL.
+	// Replace the first entry we find with a matching ID.
 	for i := range entries {
-		if entries[i].URL == entry.URL {
+		if entries[i].ID == entry.ID {
 			entries[i] = entry
 			exists = true
 
@@ -184,8 +178,8 @@ func (s *Store) Update(entry moodboard.Entry) error {
 
 // Delete removes a moodboard item from the collection.
 //
-// This method will return moodboard.ErrNoSuchEntry an item with the specified URL does not exist.
-func (s *Store) Delete(url string) error {
+// This method will return moodboard.ErrNoSuchEntry an item with the specified ID does not exist.
+func (s *Store) Delete(id string) error {
 	// We're going to be writing to disk - lock for writing.
 	s.mutex.Lock()
 
@@ -218,9 +212,9 @@ func (s *Store) Delete(url string) error {
 
 	remainingEntries := make([]moodboard.Entry, 0, len(entries))
 
-	// Only keep entries which do not match the URL provided.
+	// Only keep entries which do not match the ID provided.
 	for _, entry := range entries {
-		if entry.URL != url {
+		if entry.ID != id {
 			remainingEntries = append(remainingEntries, entry)
 		}
 	}

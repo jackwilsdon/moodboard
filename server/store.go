@@ -1,16 +1,15 @@
 package moodboard
 
-import "errors"
-
-// ErrDuplicateURL indicates that an entry has a duplicate URL.
-var ErrDuplicateURL = errors.New("duplicate URL")
+import (
+	"errors"
+)
 
 // ErrNoSuchEntry indicates that an entry does not exist.
 var ErrNoSuchEntry = errors.New("no such entry")
 
 // Entry represents a single moodboard item.
 type Entry struct {
-	URL string `json:"url"`
+	ID string `json:"id"`
 
 	// A number in the range [0, 1].
 	X float32 `json:"x"`
@@ -24,21 +23,19 @@ type Entry struct {
 
 // Store represents a collection of moodboard items.
 type Store interface {
-	// Insert adds a new moodboard item to the collection.
-	//
-	// This method will return ErrNoSuchEntry if an item with the specified URL already exists.
-	Insert(Entry) error
+	// Create creates a new moodboard item in the collection.
+	Create() (Entry, error)
 
 	// All returns all moodboard items in the collection.
 	All() ([]Entry, error)
 
 	// Update updates a moodboard item in the collection.
 	//
-	// This method will return ErrNoSuchEntry if an item with the specified URL does not exist.
+	// This method will return ErrNoSuchEntry if an item with the specified ID does not exist.
 	Update(entry Entry) error
 
 	// Delete removes a moodboard item from the collection.
 	//
-	// This method will return ErrNoSuchEntry if an item with the specified URL does not exist.
-	Delete(url string) error
+	// This method will return ErrNoSuchEntry if an item with the specified ID does not exist.
+	Delete(id string) error
 }
