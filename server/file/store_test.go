@@ -13,7 +13,7 @@ import (
 //
 // A temporary directory is used to back the store, which is cleaned up once the test and all its subtests complete.
 func newStore(t *testing.T) *file.Store {
-	dir, err := ioutil.TempDir("", "store")
+	dir, err := ioutil.TempDir("", "")
 
 	if err != nil {
 		t.Fatalf("failed to create temporary directory: %v", err)
@@ -24,7 +24,7 @@ func newStore(t *testing.T) *file.Store {
 		_ = os.RemoveAll(dir)
 	})
 
-	return file.NewStore(path.Join(dir, "store.json"))
+	return file.NewStore(path.Join(dir, "data"))
 }
 
 func TestStoreCreate(t *testing.T) {

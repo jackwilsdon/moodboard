@@ -7,6 +7,7 @@ import (
 	"github.com/jackwilsdon/moodboard"
 	"io"
 	"os"
+	"path"
 	"sync"
 )
 
@@ -25,7 +26,17 @@ func (s *Store) Create() (moodboard.Entry, error) {
 	defer s.mutex.Unlock()
 
 	// Open the file as R/W whilst optionally creating it if it doesn't exist.
-	f, err := os.OpenFile(s.path, os.O_RDWR|os.O_CREATE, 0o666)
+	f, err := os.OpenFile(path.Join(s.path, "index.json"), os.O_RDWR|os.O_CREATE, 0o666)
+
+	// If the file doesn't exist, try making the containing directory.
+	if os.IsNotExist(err) {
+		if err := os.MkdirAll(s.path, 0o777); err != nil {
+			return moodboard.Entry{}, fmt.Errorf("failed to create path: %w", err)
+		}
+
+		// Re-open the file now that we've created the containing directory.
+		f, err = os.OpenFile(path.Join(s.path, id), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o666)
+	}
 
 	if err != nil {
 		return moodboard.Entry{}, fmt.Errorf("failed to open store: %w", err)
@@ -77,7 +88,7 @@ func (s *Store) All() ([]moodboard.Entry, error) {
 	defer s.mutex.RUnlock()
 
 	// Open the file as read-only.
-	f, err := os.Open(s.path)
+	f, err := os.Open(path.Join(s.path, "index.json"))
 
 	// If the file doesn't exist then we can exit early (as there's nothing to list).
 	if os.IsNotExist(err) {
@@ -112,7 +123,7 @@ func (s *Store) Update(entry moodboard.Entry) error {
 	defer s.mutex.Unlock()
 
 	// Open the file as R/W.
-	f, err := os.OpenFile(s.path, os.O_RDWR, 0)
+	f, err := os.OpenFile(path.Join(s.path, "index.json"), os.O_RDWR, 0)
 
 	// If the file doesn't exist then we can exit early (as there's nothing to update).
 	if os.IsNotExist(err) {
@@ -187,7 +198,7 @@ func (s *Store) Delete(id string) error {
 	defer s.mutex.Unlock()
 
 	// Open the file as R/W.
-	f, err := os.OpenFile(s.path, os.O_RDWR, 0)
+	f, err := os.OpenFile(path.Join(s.path, "index.json"), os.O_RDWR, 0)
 
 	// If the file doesn't exist then we can exit early (as there's nothing to delete).
 	if os.IsNotExist(err) {
@@ -264,7 +275,7 @@ func (s *Store) Delete(id string) error {
 	return nil
 }
 
-// NewStore creates a new moodboard collection, backed by the file at the specified path.
+// NewStore creates a new moodboard collection, backed by the directory at the specified path.
 func NewStore(path string) *Store {
 	return &Store{path: path}
 }
