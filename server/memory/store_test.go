@@ -1,15 +1,18 @@
 package memory_test
 
 import (
+	"bytes"
+	"fmt"
 	"github.com/jackwilsdon/moodboard"
 	"github.com/jackwilsdon/moodboard/memory"
+	"io/ioutil"
 	"testing"
 )
 
 func TestStoreCreate(t *testing.T) {
 	s := memory.NewStore()
 
-	entry, err := s.Create()
+	entry, err := s.Create(bytes.NewReader(nil))
 
 	if err != nil {
 		t.Fatalf("expected error to be nil but got %q", err)
@@ -25,6 +28,74 @@ func TestStoreCreate(t *testing.T) {
 
 	if entry.Width != 0 {
 		t.Errorf("expected entry.Width to be 0 but got %v", entry.Width)
+	}
+}
+
+func TestStoreGetImage(t *testing.T) {
+	cs := []struct {
+		name   string
+		create int
+		get    int
+		err    error
+	}{
+		{
+			name:   "get",
+			create: 3,
+			get:    0,
+			err:    nil,
+		},
+		{
+			name:   "get nonexistent",
+			create: 0,
+			get:    -1,
+			err:    moodboard.ErrNoSuchEntry,
+		},
+	}
+
+	for _, c := range cs {
+		t.Run(c.name, func(t *testing.T) {
+			s := memory.NewStore()
+
+			var id string
+			var expectedImg []byte
+
+			for i := 0; i < c.create; i++ {
+				img := []byte(fmt.Sprintf("image %d", i))
+				entry, err := s.Create(bytes.NewReader(img))
+
+				if err != nil {
+					t.Fatalf("failed to create entry: %v", err)
+				}
+
+				if i == c.get {
+					id = entry.ID
+					expectedImg = img
+				}
+			}
+
+			img, err := s.GetImage(id)
+
+			switch {
+			case err != nil && c.err == nil:
+				t.Fatalf("expected error to be nil but got %q", err)
+			case err == nil && c.err != nil:
+				t.Fatalf("expected error to be %q but got nil", c.err)
+			case err != c.err:
+				t.Fatalf("expected error to be %q but got %q", c.err, err)
+			}
+
+			if err == nil {
+				imgBytes, err := ioutil.ReadAll(img)
+
+				if err != nil {
+					t.Fatalf("failed to read returned image: %v", err)
+				}
+
+				if !bytes.Equal(imgBytes, expectedImg) {
+					t.Fatalf("expected returned reader to read %q but got %q", expectedImg, imgBytes)
+				}
+			}
+		})
 	}
 }
 
@@ -65,7 +136,7 @@ func TestStoreUpdate(t *testing.T) {
 			entries := make([]moodboard.Entry, c.create)
 
 			for i := 0; i < c.create; i++ {
-				entry, err := s.Create()
+				entry, err := s.Create(bytes.NewReader(nil))
 
 				if err != nil {
 					t.Fatalf("failed to create entry: %v", err)
@@ -157,7 +228,7 @@ func TestStoreDelete(t *testing.T) {
 			entries := make([]moodboard.Entry, c.create)
 
 			for i := 0; i < c.create; i++ {
-				entry, err := s.Create()
+				entry, err := s.Create(bytes.NewReader(nil))
 
 				if err != nil {
 					t.Fatalf("failed to create entry: %v", err)

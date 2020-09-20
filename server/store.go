@@ -2,6 +2,7 @@ package moodboard
 
 import (
 	"errors"
+	"io"
 )
 
 // ErrNoSuchEntry indicates that an entry does not exist.
@@ -24,10 +25,17 @@ type Entry struct {
 // Store represents a collection of moodboard items.
 type Store interface {
 	// Create creates a new moodboard item in the collection.
-	Create() (Entry, error)
+	Create(io.Reader) (Entry, error)
 
 	// All returns all moodboard items in the collection.
 	All() ([]Entry, error)
+
+	// GetImage returns the image for the specified moodboard item in the collection.
+	//
+	// Note that the reader returned by this method may be an io.ReadCloser.
+	//
+	// This method will return ErrNoSuchEntry if an item with the specified ID does not exist.
+	GetImage(id string) (io.Reader, error)
 
 	// Update updates a moodboard item in the collection.
 	//
