@@ -10,132 +10,132 @@ import (
 	"sync"
 )
 
-type imageEntry struct {
-	entry moodboard.Entry
+type imageItem struct {
+	item  moodboard.Item
 	image []byte
 }
 
 // Store represents an in-memory collection of moodboard items.
 type Store struct {
-	entries []imageEntry
-	mutex   sync.RWMutex
+	items []imageItem
+	mutex sync.RWMutex
 }
 
 // Create creates a new moodboard item in the collection.
-func (s *Store) Create(img io.Reader) (moodboard.Entry, error) {
+func (s *Store) Create(img io.Reader) (moodboard.Item, error) {
 	// Read the whole image into memory.
 	buf, err := ioutil.ReadAll(img)
 
 	if err != nil {
-		return moodboard.Entry{}, fmt.Errorf("failed to read image: %w", err)
+		return moodboard.Item{}, fmt.Errorf("failed to read image: %w", err)
 	}
 
-	// We're going to be modifying our entries slice - lock for writing.
+	// We're going to be modifying our items slice - lock for writing.
 	s.mutex.Lock()
 
 	// Unlock once we're done.
 	defer s.mutex.Unlock()
 
-	entry := moodboard.Entry{
+	item := moodboard.Item{
 		ID: uuid.New().String(),
 	}
 
-	s.entries = append(s.entries, imageEntry{
-		entry: entry,
+	s.items = append(s.items, imageItem{
+		item:  item,
 		image: buf,
 	})
 
-	return entry, nil
+	return item, nil
 }
 
 // All returns all moodboard items in the collection.
-func (s *Store) All() ([]moodboard.Entry, error) {
-	// We're going to be reading from our entries slice - lock for reading.
+func (s *Store) All() ([]moodboard.Item, error) {
+	// We're going to be reading from our items slice - lock for reading.
 	s.mutex.RLock()
 
 	// Unlock once we're done.
 	defer s.mutex.RUnlock()
 
-	if s.entries == nil {
+	if s.items == nil {
 		return nil, nil
 	}
 
-	entries := make([]moodboard.Entry, len(s.entries))
+	items := make([]moodboard.Item, len(s.items))
 
-	// Extract the moodboard entry from each item.
-	for i, entry := range s.entries {
-		entries[i] = entry.entry
+	// Extract the moodboard item from each item.
+	for i, item := range s.items {
+		items[i] = item.item
 	}
 
-	return entries, nil
+	return items, nil
 }
 
 // GetImage returns the image for the specified moodboard item in the collection.
 //
-// This method will return moodboard.ErrNoSuchEntry if an item with the specified ID does not exist.
+// This method will return moodboard.ErrNoSuchItem if an item with the specified ID does not exist.
 func (s *Store) GetImage(id string) (io.Reader, error) {
-	// We're going to be reading from our entries slice - lock for reading.
+	// We're going to be reading from our items slice - lock for reading.
 	s.mutex.RLock()
 
 	// Unlock once we're done.
 	defer s.mutex.RUnlock()
 
-	// Return the image for the first entry we find with a matching ID.
-	for i := range s.entries {
-		if s.entries[i].entry.ID == id {
-			return bytes.NewReader(s.entries[i].image), nil
+	// Return the image for the first item we find with a matching ID.
+	for i := range s.items {
+		if s.items[i].item.ID == id {
+			return bytes.NewReader(s.items[i].image), nil
 		}
 	}
 
-	return nil, moodboard.ErrNoSuchEntry
+	return nil, moodboard.ErrNoSuchItem
 }
 
 // Update updates a moodboard item in the collection.
 //
-// This method will return moodboard.ErrNoSuchEntry if an item with the specified ID does not exist.
-func (s *Store) Update(entry moodboard.Entry) error {
-	// We're going to be modifying our entries slice - lock for writing.
+// This method will return moodboard.ErrNoSuchItem if an item with the specified ID does not exist.
+func (s *Store) Update(item moodboard.Item) error {
+	// We're going to be modifying our items slice - lock for writing.
 	s.mutex.Lock()
 
 	// Unlock once we're done.
 	defer s.mutex.Unlock()
 
-	// Replace the first entry we find with a matching ID.
-	for i := range s.entries {
-		if s.entries[i].entry.ID == entry.ID {
-			s.entries[i].entry = entry
+	// Replace the first item we find with a matching ID.
+	for i := range s.items {
+		if s.items[i].item.ID == item.ID {
+			s.items[i].item = item
 			return nil
 		}
 	}
 
-	return moodboard.ErrNoSuchEntry
+	return moodboard.ErrNoSuchItem
 }
 
 // Delete removes a moodboard item from the collection.
 //
-// This method will return moodboard.ErrNoSuchEntry if an item with the specified ID does not exist.
+// This method will return moodboard.ErrNoSuchItem if an item with the specified ID does not exist.
 func (s *Store) Delete(id string) error {
-	// We're going to be modifying our entries slice - lock for writing.
+	// We're going to be modifying our items slice - lock for writing.
 	s.mutex.Lock()
 
 	// Unlock once we're done.
 	defer s.mutex.Unlock()
 
-	remainingEntries := make([]imageEntry, 0, len(s.entries))
+	remainingItems := make([]imageItem, 0, len(s.items))
 
-	// Only keep entries which do not match the ID provided.
-	for _, entry := range s.entries {
-		if entry.entry.ID != id {
-			remainingEntries = append(remainingEntries, entry)
+	// Only keep items which do not match the ID provided.
+	for _, item := range s.items {
+		if item.item.ID != id {
+			remainingItems = append(remainingItems, item)
 		}
 	}
 
-	// If the number of entries is the same then we haven't found anything to delete.
-	if len(s.entries) == len(remainingEntries) {
-		return moodboard.ErrNoSuchEntry
+	// If the number of items is the same then we haven't found anything to delete.
+	if len(s.items) == len(remainingItems) {
+		return moodboard.ErrNoSuchItem
 	}
 
-	s.entries = remainingEntries
+	s.items = remainingItems
 
 	return nil
 }

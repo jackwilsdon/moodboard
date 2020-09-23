@@ -49,7 +49,7 @@ func (s *Store) saveImage(img io.Reader, id string) (string, error) {
 }
 
 // Create creates a new moodboard item in the collection.
-func (s *Store) Create(img io.Reader) (moodboard.Entry, error) {
+func (s *Store) Create(img io.Reader) (moodboard.Item, error) {
 	// We're going to be writing to disk - lock for writing.
 	s.mutex.Lock()
 
@@ -62,7 +62,7 @@ func (s *Store) Create(img io.Reader) (moodboard.Entry, error) {
 	imgPath, err := s.saveImage(img, id)
 
 	if err != nil {
-		return moodboard.Entry{}, fmt.Errorf("failed to save image: %w", err)
+		return moodboard.Item{}, fmt.Errorf("failed to save image: %w", err)
 	}
 
 	// Open the file as R/W whilst optionally creating it if it doesn't exist.
@@ -71,7 +71,7 @@ func (s *Store) Create(img io.Reader) (moodboard.Entry, error) {
 	// If the file doesn't exist, try making the containing directory.
 	if os.IsNotExist(err) {
 		if err := os.MkdirAll(s.path, 0o777); err != nil {
-			return moodboard.Entry{}, fmt.Errorf("failed to create path: %w", err)
+			return moodboard.Item{}, fmt.Errorf("failed to create path: %w", err)
 		}
 
 		// Re-open the file now that we've created the containing directory.
@@ -81,50 +81,50 @@ func (s *Store) Create(img io.Reader) (moodboard.Entry, error) {
 	if err != nil {
 		_ = os.Remove(imgPath)
 
-		return moodboard.Entry{}, fmt.Errorf("failed to open store: %w", err)
+		return moodboard.Item{}, fmt.Errorf("failed to open store: %w", err)
 	}
 
-	var entries []moodboard.Entry
+	var items []moodboard.Item
 
-	// Read the current entry list.
-	if err = json.NewDecoder(f).Decode(&entries); err != nil && err != io.EOF {
+	// Read the current item list.
+	if err = json.NewDecoder(f).Decode(&items); err != nil && err != io.EOF {
 		_ = os.Remove(imgPath)
 		_ = f.Close()
 
-		return moodboard.Entry{}, fmt.Errorf("failed to read store: %w", err)
+		return moodboard.Item{}, fmt.Errorf("failed to read store: %w", err)
 	}
 
-	// Jump back to the start of the file so that we can overwrite the existing entry list.
+	// Jump back to the start of the file so that we can overwrite the existing item list.
 	if _, err = f.Seek(0, io.SeekStart); err != nil {
 		_ = os.Remove(imgPath)
 		_ = f.Close()
 
-		return moodboard.Entry{}, fmt.Errorf("failed to seek to start of file: %w", err)
+		return moodboard.Item{}, fmt.Errorf("failed to seek to start of file: %w", err)
 	}
 
-	entry := moodboard.Entry{ID: id}
-	entries = append(entries, entry)
+	item := moodboard.Item{ID: id}
+	items = append(items, item)
 
-	// Write the new entry list.
-	if err = json.NewEncoder(f).Encode(entries); err != nil {
+	// Write the new item list.
+	if err = json.NewEncoder(f).Encode(items); err != nil {
 		_ = os.Remove(imgPath)
 		_ = f.Close()
 
-		return moodboard.Entry{}, fmt.Errorf("failed to write store: %w", err)
+		return moodboard.Item{}, fmt.Errorf("failed to write store: %w", err)
 	}
 
 	// Close the file.
 	if err = f.Close(); err != nil {
 		_ = os.Remove(imgPath)
 
-		return moodboard.Entry{}, fmt.Errorf("failed to close file: %w", err)
+		return moodboard.Item{}, fmt.Errorf("failed to close file: %w", err)
 	}
 
-	return entry, nil
+	return item, nil
 }
 
 // All returns all moodboard items in the collection.
-func (s *Store) All() ([]moodboard.Entry, error) {
+func (s *Store) All() ([]moodboard.Item, error) {
 	// We're only going to be reading from the disk - lock for reading.
 	s.mutex.RLock()
 
@@ -141,10 +141,10 @@ func (s *Store) All() ([]moodboard.Entry, error) {
 		return nil, fmt.Errorf("failed to open store: %w", err)
 	}
 
-	var entries []moodboard.Entry
+	var items []moodboard.Item
 
-	// Read the current entry list.
-	if err = json.NewDecoder(f).Decode(&entries); err != nil && err != io.EOF {
+	// Read the current item list.
+	if err = json.NewDecoder(f).Decode(&items); err != nil && err != io.EOF {
 		_ = f.Close()
 
 		return nil, fmt.Errorf("failed to read store: %w", err)
@@ -153,12 +153,12 @@ func (s *Store) All() ([]moodboard.Entry, error) {
 	// We can ignore close errors here as we haven't written to the file.
 	_ = f.Close()
 
-	return entries, nil
+	return items, nil
 }
 
 // GetImage returns the image for the specified moodboard item in the collection.
 //
-// This method will return moodboard.ErrNoSuchEntry if an item with the specified ID does not exist.
+// This method will return moodboard.ErrNoSuchItem if an item with the specified ID does not exist.
 func (s *Store) GetImage(id string) (io.Reader, error) {
 	// We're only going to be reading from the disk - lock for reading.
 	s.mutex.RLock()
@@ -171,20 +171,20 @@ func (s *Store) GetImage(id string) (io.Reader, error) {
 
 	// If the file doesn't exist then we can exit early (as we don't have any images).
 	if os.IsNotExist(err) {
-		return nil, moodboard.ErrNoSuchEntry
+		return nil, moodboard.ErrNoSuchItem
 	} else if err != nil {
 		return nil, fmt.Errorf("failed to open store: %w", err)
 	}
 
-	var entries []moodboard.Entry
+	var items []moodboard.Item
 
-	// Read the current entry list.
-	if err = json.NewDecoder(f).Decode(&entries); err != nil {
+	// Read the current item list.
+	if err = json.NewDecoder(f).Decode(&items); err != nil {
 		_ = f.Close()
 
 		// If it's an EOF error then we can ignore the error and exit early (as the file is empty).
 		if err == io.EOF {
-			return nil, moodboard.ErrNoSuchEntry
+			return nil, moodboard.ErrNoSuchItem
 		}
 
 		return nil, fmt.Errorf("failed to read store: %w", err)
@@ -195,21 +195,21 @@ func (s *Store) GetImage(id string) (io.Reader, error) {
 
 	var exists bool
 
-	for _, entry := range entries {
-		if entry.ID == id {
+	for _, item := range items {
+		if item.ID == id {
 			exists = true
 			break
 		}
 	}
 
 	if !exists {
-		return nil, moodboard.ErrNoSuchEntry
+		return nil, moodboard.ErrNoSuchItem
 	}
 
 	f, err = os.OpenFile(path.Join(s.path, id), os.O_RDONLY, 0)
 
 	if os.IsNotExist(err) {
-		return nil, moodboard.ErrNoSuchEntry
+		return nil, moodboard.ErrNoSuchItem
 	} else if err != nil {
 		return nil, fmt.Errorf("failed to open image: %w", err)
 	}
@@ -219,8 +219,8 @@ func (s *Store) GetImage(id string) (io.Reader, error) {
 
 // Update updates a moodboard item in the collection.
 //
-// This method will return moodboard.ErrNoSuchEntry if an item with the specified ID does not exist.
-func (s *Store) Update(entry moodboard.Entry) error {
+// This method will return moodboard.ErrNoSuchItem if an item with the specified ID does not exist.
+func (s *Store) Update(item moodboard.Item) error {
 	// We're going to be writing to disk - lock for writing.
 	s.mutex.Lock()
 
@@ -232,20 +232,20 @@ func (s *Store) Update(entry moodboard.Entry) error {
 
 	// If the file doesn't exist then we can exit early (as there's nothing to update).
 	if os.IsNotExist(err) {
-		return moodboard.ErrNoSuchEntry
+		return moodboard.ErrNoSuchItem
 	} else if err != nil {
 		return fmt.Errorf("failed to open store: %w", err)
 	}
 
-	var entries []moodboard.Entry
+	var items []moodboard.Item
 
-	// Read the current entry list.
-	if err = json.NewDecoder(f).Decode(&entries); err != nil {
+	// Read the current item list.
+	if err = json.NewDecoder(f).Decode(&items); err != nil {
 		_ = f.Close()
 
 		// If it's an EOF error then we can ignore the error and exit early (as the file is empty).
 		if err == io.EOF {
-			return moodboard.ErrNoSuchEntry
+			return moodboard.ErrNoSuchItem
 		}
 
 		return fmt.Errorf("failed to read store: %w", err)
@@ -253,32 +253,32 @@ func (s *Store) Update(entry moodboard.Entry) error {
 
 	var exists bool
 
-	// Replace the first entry we find with a matching ID.
-	for i := range entries {
-		if entries[i].ID == entry.ID {
-			entries[i] = entry
+	// Replace the first item we find with a matching ID.
+	for i := range items {
+		if items[i].ID == item.ID {
+			items[i] = item
 			exists = true
 
 			break
 		}
 	}
 
-	// Make sure we actually updated an entry.
+	// Make sure we actually updated an item.
 	if !exists {
 		_ = f.Close()
 
-		return moodboard.ErrNoSuchEntry
+		return moodboard.ErrNoSuchItem
 	}
 
-	// Jump back to the start of the file so that we can overwrite the existing entry list.
+	// Jump back to the start of the file so that we can overwrite the existing item list.
 	if _, err = f.Seek(0, io.SeekStart); err != nil {
 		_ = f.Close()
 
 		return fmt.Errorf("failed to seek to start of file: %w", err)
 	}
 
-	// Write the new entry list.
-	if err = json.NewEncoder(f).Encode(entries); err != nil {
+	// Write the new item list.
+	if err = json.NewEncoder(f).Encode(items); err != nil {
 		_ = f.Close()
 
 		return fmt.Errorf("failed to write store: %w", err)
@@ -294,7 +294,7 @@ func (s *Store) Update(entry moodboard.Entry) error {
 
 // Delete removes a moodboard item from the collection.
 //
-// This method will return moodboard.ErrNoSuchEntry an item with the specified ID does not exist.
+// This method will return moodboard.ErrNoSuchItem an item with the specified ID does not exist.
 func (s *Store) Delete(id string) error {
 	// We're going to be writing to disk - lock for writing.
 	s.mutex.Lock()
@@ -307,50 +307,50 @@ func (s *Store) Delete(id string) error {
 
 	// If the file doesn't exist then we can exit early (as there's nothing to delete).
 	if os.IsNotExist(err) {
-		return moodboard.ErrNoSuchEntry
+		return moodboard.ErrNoSuchItem
 	} else if err != nil {
 		return fmt.Errorf("failed to open store: %w", err)
 	}
 
-	var entries []moodboard.Entry
+	var items []moodboard.Item
 
-	// Read the current entry list.
-	if err = json.NewDecoder(f).Decode(&entries); err != nil {
+	// Read the current item list.
+	if err = json.NewDecoder(f).Decode(&items); err != nil {
 		_ = f.Close()
 
 		// If it's an EOF error then we can ignore the error and exit early (as the file is empty).
 		if err == io.EOF {
-			return moodboard.ErrNoSuchEntry
+			return moodboard.ErrNoSuchItem
 		}
 
 		return fmt.Errorf("failed to read store: %w", err)
 	}
 
-	remainingEntries := make([]moodboard.Entry, 0, len(entries))
+	remainingItems := make([]moodboard.Item, 0, len(items))
 
-	// Only keep entries which do not match the ID provided.
-	for _, entry := range entries {
-		if entry.ID != id {
-			remainingEntries = append(remainingEntries, entry)
+	// Only keep items which do not match the ID provided.
+	for _, item := range items {
+		if item.ID != id {
+			remainingItems = append(remainingItems, item)
 		}
 	}
 
-	// If the number of entries is the same then we haven't found anything to delete.
-	if len(entries) == len(remainingEntries) {
+	// If the number of items is the same then we haven't found anything to delete.
+	if len(items) == len(remainingItems) {
 		_ = f.Close()
 
-		return moodboard.ErrNoSuchEntry
+		return moodboard.ErrNoSuchItem
 	}
 
-	// Jump back to the start of the file so that we can overwrite the existing entry list.
+	// Jump back to the start of the file so that we can overwrite the existing item list.
 	if _, err = f.Seek(0, io.SeekStart); err != nil {
 		_ = f.Close()
 
 		return fmt.Errorf("failed to seek to start of file: %w", err)
 	}
 
-	// Write the new entry list.
-	if err = json.NewEncoder(f).Encode(remainingEntries); err != nil {
+	// Write the new item list.
+	if err = json.NewEncoder(f).Encode(remainingItems); err != nil {
 		_ = f.Close()
 
 		return fmt.Errorf("failed to write store: %w", err)

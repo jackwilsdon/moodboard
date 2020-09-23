@@ -12,22 +12,22 @@ import (
 func TestStoreCreate(t *testing.T) {
 	s := memory.NewStore()
 
-	entry, err := s.Create(bytes.NewReader(nil))
+	item, err := s.Create(bytes.NewReader(nil))
 
 	if err != nil {
 		t.Fatalf("expected error to be nil but got %q", err)
 	}
 
-	if entry.X != 0 {
-		t.Errorf("expected entry.X to be 0 but got %v", entry.X)
+	if item.X != 0 {
+		t.Errorf("expected item.X to be 0 but got %v", item.X)
 	}
 
-	if entry.Y != 0 {
-		t.Errorf("expected entry.Y to be 0 but got %v", entry.Y)
+	if item.Y != 0 {
+		t.Errorf("expected item.Y to be 0 but got %v", item.Y)
 	}
 
-	if entry.Width != 0 {
-		t.Errorf("expected entry.Width to be 0 but got %v", entry.Width)
+	if item.Width != 0 {
+		t.Errorf("expected item.Width to be 0 but got %v", item.Width)
 	}
 }
 
@@ -48,7 +48,7 @@ func TestStoreGetImage(t *testing.T) {
 			name:   "get nonexistent",
 			create: 0,
 			get:    -1,
-			err:    moodboard.ErrNoSuchEntry,
+			err:    moodboard.ErrNoSuchItem,
 		},
 	}
 
@@ -61,14 +61,14 @@ func TestStoreGetImage(t *testing.T) {
 
 			for i := 0; i < c.create; i++ {
 				img := []byte(fmt.Sprintf("image %d", i))
-				entry, err := s.Create(bytes.NewReader(img))
+				item, err := s.Create(bytes.NewReader(img))
 
 				if err != nil {
-					t.Fatalf("failed to create entry: %v", err)
+					t.Fatalf("failed to create item: %v", err)
 				}
 
 				if i == c.get {
-					id = entry.ID
+					id = item.ID
 					expectedImg = img
 				}
 			}
@@ -104,14 +104,14 @@ func TestStoreUpdate(t *testing.T) {
 		name   string
 		create int
 		update int
-		entry  moodboard.Entry
+		item   moodboard.Item
 		err    error
 	}{
 		{
 			name:   "update",
 			create: 3,
 			update: 0,
-			entry: moodboard.Entry{
+			item: moodboard.Item{
 				X:     0.1,
 				Y:     0.2,
 				Width: 0.3,
@@ -121,38 +121,38 @@ func TestStoreUpdate(t *testing.T) {
 			name:   "update nonexistent",
 			create: 1,
 			update: -1,
-			err:    moodboard.ErrNoSuchEntry,
+			err:    moodboard.ErrNoSuchItem,
 		},
 		{
 			name:   "update empty",
 			update: -1,
-			err:    moodboard.ErrNoSuchEntry,
+			err:    moodboard.ErrNoSuchItem,
 		},
 	}
 
 	for _, c := range cs {
 		t.Run(c.name, func(t *testing.T) {
 			s := memory.NewStore()
-			entries := make([]moodboard.Entry, c.create)
+			items := make([]moodboard.Item, c.create)
 
 			for i := 0; i < c.create; i++ {
-				entry, err := s.Create(bytes.NewReader(nil))
+				item, err := s.Create(bytes.NewReader(nil))
 
 				if err != nil {
-					t.Fatalf("failed to create entry: %v", err)
+					t.Fatalf("failed to create item: %v", err)
 				}
 
-				entries[i] = entry
+				items[i] = item
 			}
 
-			entry := c.entry
+			item := c.item
 
 			if c.update != -1 {
-				entry.ID = entries[c.update].ID
-				entries[c.update] = entry
+				item.ID = items[c.update].ID
+				items[c.update] = item
 			}
 
-			switch err := s.Update(entry); {
+			switch err := s.Update(item); {
 			case err != nil && c.err == nil:
 				t.Fatalf("expected error to be nil but got %q", err)
 			case err == nil && c.err != nil:
@@ -167,31 +167,31 @@ func TestStoreUpdate(t *testing.T) {
 				t.Fatalf("failed to get store contents: %v", err)
 			}
 
-			if len(all) != len(entries) {
-				verb := "entries"
+			if len(all) != len(items) {
+				verb := "items"
 
-				if len(entries) == 1 {
-					verb = "entry"
+				if len(items) == 1 {
+					verb = "item"
 				}
 
-				t.Fatalf("expected to get %d %s but got %d", len(entries), verb, len(all))
+				t.Fatalf("expected to get %d %s but got %d", len(items), verb, len(all))
 			}
 
 			for i := range all {
-				if all[i].ID != entries[i].ID {
-					t.Errorf("expected all[%d].ID to be %v but got %v", i, entries[i].ID, all[i].ID)
+				if all[i].ID != items[i].ID {
+					t.Errorf("expected all[%d].ID to be %v but got %v", i, items[i].ID, all[i].ID)
 				}
 
-				if all[i].X != entries[i].X {
-					t.Errorf("expected all[%d].X to be %v but got %v", i, entries[i].X, all[i].X)
+				if all[i].X != items[i].X {
+					t.Errorf("expected all[%d].X to be %v but got %v", i, items[i].X, all[i].X)
 				}
 
-				if all[i].Y != entries[i].Y {
-					t.Errorf("expected all[%d].Y to be %v but got %v", i, entries[i].Y, all[i].Y)
+				if all[i].Y != items[i].Y {
+					t.Errorf("expected all[%d].Y to be %v but got %v", i, items[i].Y, all[i].Y)
 				}
 
-				if all[i].Width != entries[i].Width {
-					t.Errorf("expected all[%d].Width to be %v but got %v", i, entries[i].Width, all[i].Width)
+				if all[i].Width != items[i].Width {
+					t.Errorf("expected all[%d].Width to be %v but got %v", i, items[i].Width, all[i].Width)
 				}
 			}
 		})
@@ -214,39 +214,39 @@ func TestStoreDelete(t *testing.T) {
 			name:   "delete nonexistent",
 			create: 1,
 			delete: -1,
-			err:    moodboard.ErrNoSuchEntry,
+			err:    moodboard.ErrNoSuchItem,
 		}, {
 			name:   "delete empty",
 			delete: -1,
-			err:    moodboard.ErrNoSuchEntry,
+			err:    moodboard.ErrNoSuchItem,
 		},
 	}
 
 	for _, c := range cs {
 		t.Run(c.name, func(t *testing.T) {
 			s := memory.NewStore()
-			entries := make([]moodboard.Entry, c.create)
+			items := make([]moodboard.Item, c.create)
 
 			for i := 0; i < c.create; i++ {
-				entry, err := s.Create(bytes.NewReader(nil))
+				item, err := s.Create(bytes.NewReader(nil))
 
 				if err != nil {
-					t.Fatalf("failed to create entry: %v", err)
+					t.Fatalf("failed to create item: %v", err)
 				}
 
-				entries[i] = entry
+				items[i] = item
 			}
 
 			var id string
 
 			if c.delete != -1 {
-				id = entries[c.delete].ID
+				id = items[c.delete].ID
 
-				// Move all entries after the deleted one left.
-				copy(entries[c.delete:], entries[c.delete+1:])
+				// Move all items after the deleted one left.
+				copy(items[c.delete:], items[c.delete+1:])
 
 				// Remove the last (now duplicated) element.
-				entries = entries[:len(entries)-1]
+				items = items[:len(items)-1]
 			}
 
 			switch err := s.Delete(id); {
@@ -264,31 +264,31 @@ func TestStoreDelete(t *testing.T) {
 				t.Fatalf("failed to get store contents: %v", err)
 			}
 
-			if len(all) != len(entries) {
-				verb := "entries"
+			if len(all) != len(items) {
+				verb := "items"
 
-				if len(entries) == 1 {
-					verb = "entry"
+				if len(items) == 1 {
+					verb = "item"
 				}
 
-				t.Fatalf("expected to get %d %s but got %d", len(entries), verb, len(all))
+				t.Fatalf("expected to get %d %s but got %d", len(items), verb, len(all))
 			}
 
 			for i := range all {
-				if all[i].ID != entries[i].ID {
-					t.Errorf("expected all[%d].ID to be %v but got %v", i, entries[i].ID, all[i].ID)
+				if all[i].ID != items[i].ID {
+					t.Errorf("expected all[%d].ID to be %v but got %v", i, items[i].ID, all[i].ID)
 				}
 
-				if all[i].X != entries[i].X {
-					t.Errorf("expected all[%d].X to be %v but got %v", i, entries[i].X, all[i].X)
+				if all[i].X != items[i].X {
+					t.Errorf("expected all[%d].X to be %v but got %v", i, items[i].X, all[i].X)
 				}
 
-				if all[i].Y != entries[i].Y {
-					t.Errorf("expected all[%d].Y to be %v but got %v", i, entries[i].Y, all[i].Y)
+				if all[i].Y != items[i].Y {
+					t.Errorf("expected all[%d].Y to be %v but got %v", i, items[i].Y, all[i].Y)
 				}
 
-				if all[i].Width != entries[i].Width {
-					t.Errorf("expected all[%d].Width to be %v but got %v", i, entries[i].Width, all[i].Width)
+				if all[i].Width != items[i].Width {
+					t.Errorf("expected all[%d].Width to be %v but got %v", i, items[i].Width, all[i].Width)
 				}
 			}
 		})

@@ -5,11 +5,11 @@ import (
 	"io"
 )
 
-// ErrNoSuchEntry indicates that an entry does not exist.
-var ErrNoSuchEntry = errors.New("no such entry")
+// ErrNoSuchItem indicates that an item does not exist.
+var ErrNoSuchItem = errors.New("no such item")
 
-// Entry represents a single moodboard item.
-type Entry struct {
+// Item represents a single moodboard item.
+type Item struct {
 	ID string `json:"id"`
 
 	// A number in the range [0, 1].
@@ -25,25 +25,25 @@ type Entry struct {
 // Store represents a collection of moodboard items.
 type Store interface {
 	// Create creates a new moodboard item in the collection.
-	Create(io.Reader) (Entry, error)
+	Create(io.Reader) (Item, error)
 
 	// All returns all moodboard items in the collection.
-	All() ([]Entry, error)
+	All() ([]Item, error)
 
 	// GetImage returns the image for the specified moodboard item in the collection.
 	//
 	// Note that the reader returned by this method may be an io.ReadCloser.
 	//
-	// This method will return ErrNoSuchEntry if an item with the specified ID does not exist.
+	// This method will return ErrNoSuchItem if an item with the specified ID does not exist.
 	GetImage(id string) (io.Reader, error)
 
 	// Update updates a moodboard item in the collection.
 	//
-	// This method will return ErrNoSuchEntry if an item with the specified ID does not exist.
-	Update(entry Entry) error
+	// This method will return ErrNoSuchItem if an item with the specified ID does not exist.
+	Update(item Item) error
 
 	// Delete removes a moodboard item from the collection.
 	//
-	// This method will return ErrNoSuchEntry if an item with the specified ID does not exist.
+	// This method will return ErrNoSuchItem if an item with the specified ID does not exist.
 	Delete(id string) error
 }

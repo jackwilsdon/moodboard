@@ -1,6 +1,6 @@
 # :sparkles: moodboard server :sparkles:
 
-The moodboard server is a simple Go application which provides access to and management of moodboard entries via a RESTful API.
+The moodboard server is a simple Go application which provides access to and management of moodboard items via a RESTful API.
 
 ## Getting Started
 

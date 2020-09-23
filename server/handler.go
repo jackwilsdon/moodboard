@@ -58,7 +58,7 @@ func validateContentType(r io.Reader) (io.Reader, bool, error) {
 	return r, false, nil
 }
 
-// create handles inserting new moodboard entries.
+// create handles inserting new moodboard items.
 func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Accept", "multipart/form-data")
 
@@ -103,26 +103,26 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	entry, err := h.store.Create(partReader)
+	item, err := h.store.Create(partReader)
 
 	if err != nil {
 		// This error is unexpected - log it and return a generic error to the user.
-		h.logger.Error(fmt.Sprintf("failed to insert entry: %v", err))
+		h.logger.Error(fmt.Sprintf("failed to insert item: %v", err))
 		w.WriteHeader(http.StatusInternalServerError)
 
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	_ = json.NewEncoder(w).Encode(entry.ID)
+	_ = json.NewEncoder(w).Encode(item.ID)
 }
 
-// image handles getting images for moodboard entries.
+// image handles getting images for moodboard items.
 func (h *Handler) image(w http.ResponseWriter, r *http.Request) {
 	// The ID of the image comes after "/image/".
 	img, err := h.store.GetImage(r.URL.Path[7:])
 
-	if errors.Is(err, ErrNoSuchEntry) {
+	if errors.Is(err, ErrNoSuchItem) {
 		w.WriteHeader(http.StatusNotFound)
 
 		return
@@ -143,30 +143,30 @@ func (h *Handler) image(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// list handles listing moodboard entries.
+// list handles listing moodboard items.
 func (h *Handler) list(w http.ResponseWriter) {
 	es, err := h.store.All()
 
-	// If we can't get a list of entries then log the error and return a generic error to the client.
+	// If we can't get a list of items then log the error and return a generic error to the client.
 	if err != nil {
-		h.logger.Error(fmt.Sprintf("failed to list entries: %v", err))
+		h.logger.Error(fmt.Sprintf("failed to list items: %v", err))
 		w.WriteHeader(http.StatusInternalServerError)
 
 		return
 	}
 
-	// If we don't have any entries then use a zero-length slice.
+	// If we don't have any items then use a zero-length slice.
 	//
 	// This is needed to ensure that the JSON encoder does not return null instead of an empty array.
 	if es == nil {
-		es = make([]Entry, 0)
+		es = make([]Item, 0)
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	_ = json.NewEncoder(w).Encode(es)
 }
 
-// update handles updating existing moodboard entries.
+// update handles updating existing moodboard items.
 func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Accept", "application/json")
 
@@ -177,29 +177,29 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var entry Entry
+	var item Item
 
 	// Try reading in the request.
-	if err := json.NewDecoder(r.Body).Decode(&entry); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 
 		return
 	}
 
 	// Make sure the request is valid.
-	if entry.X < 0 || entry.X > 1 || entry.Y < 0 || entry.Y > 1 || entry.Width < 0 || entry.Width > 1 {
+	if item.X < 0 || item.X > 1 || item.Y < 0 || item.Y > 1 || item.Width < 0 || item.Width > 1 {
 		w.WriteHeader(http.StatusBadRequest)
 
 		return
 	}
 
-	err := h.store.Update(entry)
+	err := h.store.Update(item)
 
-	if errors.Is(err, ErrNoSuchEntry) {
+	if errors.Is(err, ErrNoSuchItem) {
 		w.WriteHeader(http.StatusNotFound)
 	} else if err != nil {
 		// If we don't know how to handle this error then log it and return a generic error to the user.
-		h.logger.Error(fmt.Sprintf("failed to update entry: %v", err))
+		h.logger.Error(fmt.Sprintf("failed to update item: %v", err))
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
@@ -214,31 +214,31 @@ func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var entry struct {
+	var item struct {
 		ID string `json:"id"`
 	}
 
 	// Try reading in the request.
-	if err := json.NewDecoder(r.Body).Decode(&entry); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 
 		return
 	}
 
 	// Make sure we have an ID in the request.
-	if len(entry.ID) == 0 {
+	if len(item.ID) == 0 {
 		w.WriteHeader(http.StatusBadRequest)
 
 		return
 	}
 
-	err := h.store.Delete(entry.ID)
+	err := h.store.Delete(item.ID)
 
-	if errors.Is(err, ErrNoSuchEntry) {
+	if errors.Is(err, ErrNoSuchItem) {
 		w.WriteHeader(http.StatusNotFound)
 	} else if err != nil {
 		// If we don't know how to handle this error then log it and return a generic error to the user.
-		h.logger.Error(fmt.Sprintf("failed to delete entry: %v", err))
+		h.logger.Error(fmt.Sprintf("failed to delete item: %v", err))
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
