@@ -417,6 +417,15 @@ func (s *Store) Delete(id string) error {
 		return moodboard.ErrNoSuchItem
 	}
 
+	// Try deleting the image file.
+	//
+	// If the deletion fails because of some reason other than the file not existing, we return an error.
+	if err := os.Remove(path.Join(s.path, id)); err != nil && !os.IsNotExist(err) {
+		_ = f.Close()
+
+		return fmt.Errorf("failed to delete image: %w", err)
+	}
+
 	// Jump back to the start of the file so that we can overwrite the existing item list.
 	if _, err = f.Seek(0, io.SeekStart); err != nil {
 		_ = f.Close()
