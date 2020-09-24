@@ -225,34 +225,10 @@ func (h *Handler) list(w http.ResponseWriter) {
 }
 
 func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Accept", "application/json")
+	// The ID of the item being deleted comes after "/".
+	id := r.URL.Path[1:]
 
-	// Make sure we have the right content type.
-	if r.Header.Get("Content-Type") != "application/json" {
-		w.WriteHeader(http.StatusUnsupportedMediaType)
-
-		return
-	}
-
-	var item struct {
-		ID string `json:"id"`
-	}
-
-	// Try reading in the request.
-	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-
-		return
-	}
-
-	// Make sure we have an ID in the request.
-	if len(item.ID) == 0 {
-		w.WriteHeader(http.StatusBadRequest)
-
-		return
-	}
-
-	err := h.store.Delete(item.ID)
+	err := h.store.Delete(id)
 
 	if errors.Is(err, ErrNoSuchItem) {
 		w.WriteHeader(http.StatusNotFound)
