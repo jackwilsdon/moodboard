@@ -189,6 +189,9 @@ func (h *Handler) image(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Ask the client to cache the image.
+	w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+
 	// Pipe the image out to the response.
 	_, _ = io.Copy(w, img)
 
