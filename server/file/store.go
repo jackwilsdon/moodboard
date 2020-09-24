@@ -49,7 +49,7 @@ func (s *Store) saveImage(img io.Reader, id string) (string, error) {
 }
 
 // Create creates a new moodboard item in the collection.
-func (s *Store) Create(img io.Reader) (moodboard.Item, error) {
+func (s *Store) Create(img io.Reader) (string, error) {
 	// We're going to be writing to disk - lock for writing.
 	s.mutex.Lock()
 
@@ -62,7 +62,7 @@ func (s *Store) Create(img io.Reader) (moodboard.Item, error) {
 	imgPath, err := s.saveImage(img, id)
 
 	if err != nil {
-		return moodboard.Item{}, fmt.Errorf("failed to save image: %w", err)
+		return "", fmt.Errorf("failed to save image: %w", err)
 	}
 
 	// Open the file as R/W whilst optionally creating it if it doesn't exist.
@@ -71,7 +71,7 @@ func (s *Store) Create(img io.Reader) (moodboard.Item, error) {
 	// If the file doesn't exist, try making the containing directory.
 	if os.IsNotExist(err) {
 		if err := os.MkdirAll(s.path, 0o777); err != nil {
-			return moodboard.Item{}, fmt.Errorf("failed to create path: %w", err)
+			return "", fmt.Errorf("failed to create path: %w", err)
 		}
 
 		// Re-open the file now that we've created the containing directory.
@@ -81,17 +81,17 @@ func (s *Store) Create(img io.Reader) (moodboard.Item, error) {
 	if err != nil {
 		_ = os.Remove(imgPath)
 
-		return moodboard.Item{}, fmt.Errorf("failed to open store: %w", err)
+		return "", fmt.Errorf("failed to open store: %w", err)
 	}
 
-	var items []moodboard.Item
+	var items []string
 
 	// Read the current item list.
 	if err = json.NewDecoder(f).Decode(&items); err != nil && err != io.EOF {
 		_ = os.Remove(imgPath)
 		_ = f.Close()
 
-		return moodboard.Item{}, fmt.Errorf("failed to read store: %w", err)
+		return "", fmt.Errorf("failed to read store: %w", err)
 	}
 
 	// Jump back to the start of the file so that we can overwrite the existing item list.
@@ -99,32 +99,31 @@ func (s *Store) Create(img io.Reader) (moodboard.Item, error) {
 		_ = os.Remove(imgPath)
 		_ = f.Close()
 
-		return moodboard.Item{}, fmt.Errorf("failed to seek to start of file: %w", err)
+		return "", fmt.Errorf("failed to seek to start of file: %w", err)
 	}
 
-	item := moodboard.Item{ID: id}
-	items = append(items, item)
+	items = append(items, id)
 
 	// Write the new item list.
 	if err = json.NewEncoder(f).Encode(items); err != nil {
 		_ = os.Remove(imgPath)
 		_ = f.Close()
 
-		return moodboard.Item{}, fmt.Errorf("failed to write store: %w", err)
+		return "", fmt.Errorf("failed to write store: %w", err)
 	}
 
 	// Close the file.
 	if err = f.Close(); err != nil {
 		_ = os.Remove(imgPath)
 
-		return moodboard.Item{}, fmt.Errorf("failed to close file: %w", err)
+		return "", fmt.Errorf("failed to close file: %w", err)
 	}
 
-	return item, nil
+	return id, nil
 }
 
 // All returns all moodboard items in the collection.
-func (s *Store) All() ([]moodboard.Item, error) {
+func (s *Store) All() ([]string, error) {
 	// We're only going to be reading from the disk - lock for reading.
 	s.mutex.RLock()
 
@@ -141,7 +140,7 @@ func (s *Store) All() ([]moodboard.Item, error) {
 		return nil, fmt.Errorf("failed to open store: %w", err)
 	}
 
-	var items []moodboard.Item
+	var items []string
 
 	// Read the current item list.
 	if err = json.NewDecoder(f).Decode(&items); err != nil && err != io.EOF {
@@ -176,7 +175,7 @@ func (s *Store) GetImage(id string) (io.Reader, error) {
 		return nil, fmt.Errorf("failed to open store: %w", err)
 	}
 
-	var items []moodboard.Item
+	var items []string
 
 	// Read the current item list.
 	if err = json.NewDecoder(f).Decode(&items); err != nil {
@@ -196,7 +195,7 @@ func (s *Store) GetImage(id string) (io.Reader, error) {
 	var exists bool
 
 	for _, item := range items {
-		if item.ID == id {
+		if item == id {
 			exists = true
 			break
 		}
@@ -217,10 +216,8 @@ func (s *Store) GetImage(id string) (io.Reader, error) {
 	return f, nil
 }
 
-// Update updates a moodboard item in the collection.
-//
-// This method will return moodboard.ErrNoSuchItem if an item with the specified ID does not exist.
-func (s *Store) Update(item moodboard.Item) error {
+// move moves a moodboard item before or after another one in the collection.
+func (s *Store) move(id, targetID string, before bool) error {
 	// We're going to be writing to disk - lock for writing.
 	s.mutex.Lock()
 
@@ -230,14 +227,14 @@ func (s *Store) Update(item moodboard.Item) error {
 	// Open the file as R/W.
 	f, err := os.OpenFile(path.Join(s.path, "index.json"), os.O_RDWR, 0)
 
-	// If the file doesn't exist then we can exit early (as there's nothing to update).
+	// If the file doesn't exist then we can exit early (as there's nothing to delete).
 	if os.IsNotExist(err) {
 		return moodboard.ErrNoSuchItem
 	} else if err != nil {
 		return fmt.Errorf("failed to open store: %w", err)
 	}
 
-	var items []moodboard.Item
+	var items []string
 
 	// Read the current item list.
 	if err = json.NewDecoder(f).Decode(&items); err != nil {
@@ -251,24 +248,72 @@ func (s *Store) Update(item moodboard.Item) error {
 		return fmt.Errorf("failed to read store: %w", err)
 	}
 
-	var exists bool
+	index := -1
+	target := -1
 
-	// Replace the first item we find with a matching ID.
-	for i := range items {
-		if items[i].ID == item.ID {
-			items[i] = item
-			exists = true
+	// Find the indexes of the items we're moving.
+	for i, item := range items {
+		if item == id {
+			index = i
+		}
 
+		if item == targetID {
+			target = i
+		}
+
+		// We can break early if we've found both indexes.
+		if index != -1 && target != -1 {
 			break
 		}
 	}
 
-	// Make sure we actually updated an item.
-	if !exists {
+	// If either of the indexes is missing, return an error.
+	if index == -1 || target == -1 {
 		_ = f.Close()
 
 		return moodboard.ErrNoSuchItem
 	}
+
+	item := items[index]
+
+	if index < target {
+		// If we're moving the item before the target and it's already before the target then we need to take
+		// 1 off the target to ensure we don't insert it after the target.
+		if before {
+			target--
+		}
+
+		// index = 1
+		// target = 4
+		//
+		// 0 1 2 3 4 5
+		// -----------
+		// A B C D E F
+		// |  / / /  |
+		// A C D E X F
+		// | | | | | |
+		// A C D E B F
+		copy(items[index:], items[index+1:target+1])
+	} else if index > target {
+		// If we're moving the item after the target and it's already after the target then we need to add 1
+		// to the target to ensure we don't insert it before the target.
+		if !before {
+			target++
+		}
+
+		// move([]string{"A", "B", "C", "D", "E", "F"}, 4, 1)
+		//
+		// 0 1 2 3 4 5
+		// -----------
+		// A B C D E F
+		// |  \ \ \  |
+		// A X B C D F
+		// | | | | | |
+		// A E B C D F
+		copy(items[target+1:], items[target:index])
+	}
+
+	items[target] = item
 
 	// Jump back to the start of the file so that we can overwrite the existing item list.
 	if _, err = f.Seek(0, io.SeekStart); err != nil {
@@ -277,11 +322,27 @@ func (s *Store) Update(item moodboard.Item) error {
 		return fmt.Errorf("failed to seek to start of file: %w", err)
 	}
 
-	// Write the new item list.
+	// Write the modified item list.
 	if err = json.NewEncoder(f).Encode(items); err != nil {
 		_ = f.Close()
 
 		return fmt.Errorf("failed to write store: %w", err)
+	}
+
+	// Work out our current position so that we can truncate the remainder of the file.
+	pos, err := f.Seek(0, io.SeekCurrent)
+
+	if err != nil {
+		_ = f.Close()
+
+		return fmt.Errorf("failed to find position in file: %w", err)
+	}
+
+	// Truncate the remainder of the file.
+	if err = f.Truncate(pos); err != nil {
+		_ = f.Close()
+
+		return fmt.Errorf("failed to truncate file: %w", err)
 	}
 
 	// Close the file.
@@ -290,6 +351,20 @@ func (s *Store) Update(item moodboard.Item) error {
 	}
 
 	return nil
+}
+
+// MoveBefore moves a moodboard item before another one in the collection.
+//
+// This method will return moodboard.ErrNoSuchItem if items with either of the specified IDs do not exist.
+func (s *Store) MoveBefore(id string, beforeID string) error {
+	return s.move(id, beforeID, true)
+}
+
+// MoveAfter moves a moodboard item after another one in the collection.
+//
+// This method will return moodboard.ErrNoSuchItem if items with either of the specified IDs do not exist.
+func (s *Store) MoveAfter(id string, afterID string) error {
+	return s.move(id, afterID, false)
 }
 
 // Delete removes a moodboard item from the collection.
@@ -312,7 +387,7 @@ func (s *Store) Delete(id string) error {
 		return fmt.Errorf("failed to open store: %w", err)
 	}
 
-	var items []moodboard.Item
+	var items []string
 
 	// Read the current item list.
 	if err = json.NewDecoder(f).Decode(&items); err != nil {
@@ -326,11 +401,11 @@ func (s *Store) Delete(id string) error {
 		return fmt.Errorf("failed to read store: %w", err)
 	}
 
-	remainingItems := make([]moodboard.Item, 0, len(items))
+	remainingItems := make([]string, 0, len(items))
 
 	// Only keep items which do not match the ID provided.
 	for _, item := range items {
-		if item.ID != id {
+		if item != id {
 			remainingItems = append(remainingItems, item)
 		}
 	}

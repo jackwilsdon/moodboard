@@ -28,6 +28,61 @@ var validContentTypes = []string{
 	"image/png",
 }
 
+// create handles reordering moodboard items.
+func (h *Handler) move(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Accept", "application/json")
+
+	// Make sure we have the right content type.
+	if r.Header.Get("Content-Type") != "application/json" {
+		w.WriteHeader(http.StatusUnsupportedMediaType)
+
+		return
+	}
+
+	var target struct {
+		Before string `json:"before"`
+		After  string `json:"after"`
+	}
+
+	// Try reading in the request.
+	if err := json.NewDecoder(r.Body).Decode(&target); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+
+		return
+	}
+
+	var err error
+
+	// The ID of the item being moved comes after "/move/".
+	id := r.URL.Path[6:]
+
+	// We only want "before" or "after" - not both.
+	if len(target.Before) > 0 && len(target.After) > 0 {
+		w.WriteHeader(http.StatusBadRequest)
+
+		return
+	} else if len(target.Before) > 0 {
+		err = h.store.MoveBefore(id, target.Before)
+	} else if len(target.After) > 0 {
+		err = h.store.MoveAfter(id, target.After)
+	} else {
+		// If we lack both "before" and "after" then it's a bad request.
+		w.WriteHeader(http.StatusBadRequest)
+
+		return
+	}
+
+	if errors.Is(err, ErrNoSuchItem) {
+		w.WriteHeader(http.StatusNotFound)
+
+		return
+	} else if err != nil {
+		// If we don't know how to handle this error then log it and return a generic error to the user.
+		h.logger.Error(fmt.Sprintf("failed to move item: %v", err))
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
 // validateContentType checks the content type of the specified reader against validContentTypes.
 //
 // A new reader is returned which is prefixed with the result of any reads performed by this function.
@@ -103,7 +158,7 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	item, err := h.store.Create(partReader)
+	id, err := h.store.Create(partReader)
 
 	if err != nil {
 		// This error is unexpected - log it and return a generic error to the user.
@@ -114,7 +169,7 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	_ = json.NewEncoder(w).Encode(item.ID)
+	_ = json.NewEncoder(w).Encode(id)
 }
 
 // image handles getting images for moodboard items.
@@ -159,49 +214,11 @@ func (h *Handler) list(w http.ResponseWriter) {
 	//
 	// This is needed to ensure that the JSON encoder does not return null instead of an empty array.
 	if es == nil {
-		es = make([]Item, 0)
+		es = make([]string, 0)
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	_ = json.NewEncoder(w).Encode(es)
-}
-
-// update handles updating existing moodboard items.
-func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Accept", "application/json")
-
-	// Make sure we have the right content type.
-	if r.Header.Get("Content-Type") != "application/json" {
-		w.WriteHeader(http.StatusUnsupportedMediaType)
-
-		return
-	}
-
-	var item Item
-
-	// Try reading in the request.
-	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-
-		return
-	}
-
-	// Make sure the request is valid.
-	if item.X < 0 || item.X > 1 || item.Y < 0 || item.Y > 1 || item.Width < 0 || item.Width > 1 {
-		w.WriteHeader(http.StatusBadRequest)
-
-		return
-	}
-
-	err := h.store.Update(item)
-
-	if errors.Is(err, ErrNoSuchItem) {
-		w.WriteHeader(http.StatusNotFound)
-	} else if err != nil {
-		// If we don't know how to handle this error then log it and return a generic error to the user.
-		h.logger.Error(fmt.Sprintf("failed to update item: %v", err))
-		w.WriteHeader(http.StatusInternalServerError)
-	}
 }
 
 func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
@@ -246,15 +263,17 @@ func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
-		h.create(w, r)
+		if strings.HasPrefix(r.URL.Path, "/move/") {
+			h.move(w, r)
+		} else {
+			h.create(w, r)
+		}
 	case http.MethodGet:
 		if strings.HasPrefix(r.URL.Path, "/image/") {
 			h.image(w, r)
 		} else {
 			h.list(w)
 		}
-	case http.MethodPut:
-		h.update(w, r)
 	case http.MethodDelete:
 		h.delete(w, r)
 	default:
