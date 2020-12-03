@@ -1,0 +1,40 @@
+name: server
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ^1.15.0
+      - uses: actions/checkout@v2
+      - run: go get -d -t -v ./...
+        working-directory: server
+      - run: go build -v ./...
+        working-directory: server
+      - run: go test -v ./...
+        working-directory: server
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ^1.15.0
+      - uses: actions/checkout@v2
+      - run: go get -d -t -v ./...
+        working-directory: server
+      - run: |
+          output=$(go fmt ./...)
+
+          if [ -n "$output" ]; then
+            1>&2 echo "these files are not go fmt'd:"
+            echo "$output" | sed 's/^/  /g'
+            exit 1
+          else
+            echo 'all ok!'
+          fi
+        working-directory: server
