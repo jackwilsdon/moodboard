@@ -38,3 +38,5 @@ jobs:
             echo 'all ok!'
           fi
         working-directory: server
+      - run: go vet ./...
+        working-directory: server
