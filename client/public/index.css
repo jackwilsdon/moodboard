@@ -1,0 +1,21 @@
+html {
+  font-family: sans-serif;
+}
+
+.item {
+  align-items: center;
+  background-color: red;
+  border: 1px solid black;
+  box-sizing: border-box;
+  color: white;
+  display: inline-flex;
+  height: 50px;
+  justify-content: center;
+  text-align: center;
+  width: 25%;
+}
+
+.item.grabbed {
+  position: absolute;
+  background-color: lime;
+}
